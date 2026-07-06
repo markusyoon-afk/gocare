@@ -93,12 +93,15 @@ export function HomeScreen() {
               <div className="kv" key={h.id}>
                 <span className="k">
                   <b style={{ color: "var(--ink)" }}>{APPS[h.appId].name}</b>
-                  <span className="mono" style={{ marginLeft: 8, fontSize: 11, color: "var(--accent)" }}>
-                    {h.lot}
+                  <span className="mono hide-compact" style={{ marginLeft: 8, fontSize: 11, color: "var(--accent)" }}>
+                    {h.sampleId ?? h.lot}
                   </span>
                 </span>
-                <span className="v" style={{ fontWeight: 400, color: "var(--muted)" }}>
-                  {h.summary}
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="v" style={{ fontWeight: 400, color: "var(--muted)" }}>
+                    {h.summary}
+                  </span>
+                  {h.signed && <span className="chip chip-susceptible">signed</span>}
                 </span>
               </div>
             ))}

@@ -9,7 +9,8 @@ import {
   GOSEQ_DOWNSTREAM,
   MNGS_EXAMPLE,
 } from "../data/catalog";
-import { useSession } from "../store/session";
+import { useSession, can } from "../store/session";
+import { summarize } from "../lib/format";
 import type { DetectResult } from "../engine/run";
 
 export function ResultsScreen() {
@@ -17,13 +18,11 @@ export function ResultsScreen() {
   const appId = state.appId!;
   const app = APPS[appId];
 
-  // Record the run once. Ref guard survives StrictMode's double-invoked effect
-  // so a single run never produces duplicate history entries.
+  // Record the run once (ref guard survives StrictMode's double-invoked effect).
   const recorded = useRef(false);
   useEffect(() => {
     if (recorded.current) return;
     recorded.current = true;
-    const summary = summarize(appId, state.result, state.matrixId);
     dispatch({
       type: "RECORD",
       record: {
@@ -31,8 +30,11 @@ export function ResultsScreen() {
         appId,
         matrixId: state.matrixId,
         lot: state.lot ?? "LOT",
+        sampleId: state.sampleId,
         when: Date.now(),
-        summary,
+        summary: summarize(appId, state.result, state.matrixId),
+        signed: false,
+        operatorName: state.operator?.name ?? "—",
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -40,19 +42,18 @@ export function ResultsScreen() {
 
   return (
     <div className="fade-in">
-      <div className="page-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
+      <div className="page-head results-head">
         <div>
           <div className="eyebrow">{app.tm} · Run complete</div>
           <h1 className="page-title">Results</h1>
           <p className="page-sub mono" style={{ fontSize: 12 }}>
-            {state.lot} {state.matrixId ? `· ${MATRICES[state.matrixId].name}` : "· raw sample"}
+            {state.lot} · sample {state.sampleId ?? "—"}
+            {state.matrixId ? ` · ${MATRICES[state.matrixId].name}` : ""}
           </p>
         </div>
-        <div className="btn-row">
-          <button className="press btn btn-ghost" onClick={() => dispatch({ type: "GO_HOME" })}>
-            New cartridge
-          </button>
-        </div>
+        <button className="press btn btn-ghost" onClick={() => dispatch({ type: "GO_HOME" })}>
+          New cartridge
+        </button>
       </div>
 
       {appId === "goprep" && <PrepResults />}
@@ -67,20 +68,44 @@ export function ResultsScreen() {
 /* ---------- GoDETECT / GoH2O ---------- */
 
 function DetectResults({ result, environmental }: { result: DetectResult; environmental: boolean }) {
+  const { state, dispatch } = useSession();
   const positive = result.positivePathogen ? PATHOGENS[result.positivePathogen] : null;
   const anyResistant = result.interpretation.calls.some((c) => c.susceptibility === "resistant");
-  const detectedSnps = result.snps.filter((s) => s.detected);
+
+  // QC gate: an invalid internal control means the result is not reportable.
+  if (!result.controlValid) {
+    return (
+      <div className="fade-in">
+        <div className="verdict verdict-resistant" style={{ marginBottom: 18 }}>
+          <div className="verdict-icon" style={{ background: "rgba(255,107,107,0.18)" }}>⚠</div>
+          <div>
+            <div className="stat" style={{ fontSize: 20 }}>Invalid run — internal control failed</div>
+            <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 3 }}>
+              QC gating (CLIA §493.1256): results are not reportable. Repeat with a new cartridge.
+            </div>
+          </div>
+        </div>
+        <div className="panel panel-pad" style={{ maxWidth: 620 }}>
+          <div className="kv"><span className="k">Internal control</span><span className="v" style={{ color: "var(--red)" }}>FAILED · {(result.controlSignal * 100).toFixed(0)}% (min 40%)</span></div>
+          <div className="kv"><span className="k">Result status</span><span className="v">Suppressed · not reportable</span></div>
+          <div className="kv"><span className="k">Sign-out</span><span className="v">Blocked until control valid</span></div>
+          <button className="press btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => dispatch({ type: "GO_HOME" })}>
+            ↻ Repeat test with new cartridge
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20, alignItems: "start" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        {/* Verdict */}
+    <div className="results-grid">
+      <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
         <div className={"verdict " + (positive ? "verdict-positive" : "")}>
           <div className="verdict-icon" style={{ background: positive ? "rgba(53,204,230,0.18)" : "rgba(255,255,255,0.06)" }}>
             {positive ? "🧫" : "○"}
           </div>
           <div>
-            <div className="stat" style={{ fontSize: 22 }}>
+            <div className="stat" style={{ fontSize: 21 }}>
               {positive ? `${positive.name} detected` : "No target pathogen detected"}
             </div>
             <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 3 }}>
@@ -88,19 +113,19 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
               {environmental && " · logged to surveillance"}
             </div>
           </div>
+          <span className="chip chip-susceptible qc-chip">CONTROL VALID</span>
         </div>
 
-        {/* Target panel readout */}
         <div className="panel panel-pad">
           <div className="section-label">Pathogen panel — lateral-flow readout</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {result.targets.map((t) => (
               <div key={t.pathogenId} className={"result-target" + (t.detected ? " hit" : "")}>
-                <div style={{ minWidth: 150 }}>
+                <div style={{ minWidth: 130 }}>
                   <div style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>{t.name}</div>
                   <div className="helper mono">{t.idMarker}</div>
                 </div>
-                <div className="lfa" style={{ flex: 1 }}>
+                <div className="lfa hide-compact" style={{ flex: 1 }}>
                   <div className="lfa-band control" />
                   {t.detected && <div className="lfa-band test" />}
                 </div>
@@ -112,15 +137,14 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
           </div>
         </div>
 
-        {/* AMR SNP calls */}
         {result.snps.length > 0 && (
-          <div className="panel panel-pad">
+          <div className="panel panel-pad table-wrap">
             <div className="section-label">AMR SNP calls · {positive?.name}</div>
             <table className="dtable">
               <thead>
                 <tr>
                   <th>Marker</th>
-                  <th>Gene</th>
+                  <th className="hide-compact">Gene</th>
                   <th>Antibiotic class</th>
                   <th style={{ textAlign: "right" }}>Call</th>
                 </tr>
@@ -131,7 +155,7 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
                   return (
                     <tr key={s.assayId} className={s.detected ? "row-targeted" : ""}>
                       <td className="mono accent-val">{s.label}</td>
-                      <td className="mono">{s.gene}</td>
+                      <td className="mono hide-compact">{s.gene}</td>
                       <td>{assay.antibioticClass}</td>
                       <td style={{ textAlign: "right" }}>
                         <span className={"chip " + (s.detected ? "chip-resistant" : "chip-susceptible")}>
@@ -147,11 +171,11 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
         )}
       </div>
 
-      {/* RIGHT: interpretation */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 0 }}>
+      {/* RIGHT: interpretation + sign-out */}
+      <div className="results-rail">
         <div className={"panel panel-pad " + (anyResistant ? "verdict-resistant" : "feature")}>
           <div className="section-label">Treatment interpretation</div>
-          <div className="stat" style={{ fontSize: 17, lineHeight: 1.3, marginBottom: 14 }}>
+          <div className="stat" style={{ fontSize: 16, lineHeight: 1.3, marginBottom: 14 }}>
             {result.interpretation.headline}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -186,16 +210,35 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
               </div>
             </>
           )}
-          {detectedSnps.length === 0 && positive && (
-            <div className="helper" style={{ marginTop: 12 }}>
-              No resistance markers found for {positive.name}. First-line therapy expected to be effective; confirm per
-              local antibiogram.
+        </div>
+
+        {/* Review & electronic sign-out (21 CFR Part 11 / CLIA) */}
+        <div className="panel panel-pad">
+          <div className="section-label">Review &amp; sign-out</div>
+          {state.signedOut ? (
+            <div className="signed-box">
+              <div className="verdict-icon" style={{ background: "rgba(70,211,154,0.18)", width: 40, height: 40, fontSize: 18 }}>✓</div>
+              <div>
+                <div className="stat" style={{ fontSize: 15 }}>Signed out</div>
+                <div className="helper">{state.signedBy} · {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+              </div>
             </div>
+          ) : can(state, "sign_out") ? (
+            <>
+              <div className="helper" style={{ marginBottom: 12 }}>
+                {state.operator?.name} attests this result was reviewed. The signature is bound in the audit log.
+              </div>
+              <button className="press btn btn-primary" style={{ width: "100%" }} onClick={() => dispatch({ type: "SIGN_RESULT" })}>
+                ✎ Review &amp; sign out
+              </button>
+            </>
+          ) : (
+            <div className="helper">Your role ({state.operator?.role}) cannot sign out results. A clinician or lab technician must review.</div>
           )}
         </div>
 
         {positive && (
-          <div className="panel panel-pad">
+          <div className="panel panel-pad hide-compact">
             <div className="section-label">Assay performance · vs culture</div>
             {(() => {
               const perf = CLINICAL_PERFORMANCE.find((p) => p.pathogen === positive.name);
@@ -209,9 +252,6 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
                 </div>
               );
             })()}
-            <div className="helper" style={{ marginTop: 12 }}>
-              For research / demo use. Values from internal contrived + clinical studies.
-            </div>
           </div>
         )}
       </div>
@@ -234,12 +274,12 @@ function PrepResults() {
   const { state, dispatch } = useSession();
   const matrix = state.matrixId ? MATRICES[state.matrixId] : null;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 20, alignItems: "start" }}>
+    <div className="results-grid">
       <div className="panel panel-pad">
         <div className="verdict verdict-positive" style={{ marginBottom: 18 }}>
           <div className="verdict-icon" style={{ background: "rgba(53,204,230,0.18)" }}>🧪</div>
           <div>
-            <div className="stat" style={{ fontSize: 22 }}>Purified nucleic acid eluted</div>
+            <div className="stat" style={{ fontSize: 21 }}>Purified nucleic acid eluted</div>
             <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 3 }}>
               Detachable NA tube ready for downstream detection or sequencing.
             </div>
@@ -250,31 +290,28 @@ function PrepResults() {
           <PerfStat label="No-template control" value="<0.1%" />
         </div>
         <div className="helper" style={{ marginTop: 14 }}>
-          Magnetic-bead chemistry: lysis → capture → wash → elution, identical across matrices. Recovery relative to
-          1×10³ CFU/mL positive control (qPCR).
+          Magnetic-bead chemistry: lysis → capture → wash → elution. Recovery relative to 1×10³ CFU/mL positive control (qPCR).
         </div>
       </div>
-      <div className="panel panel-pad">
+      <div className="panel panel-pad results-rail">
         <div className="section-label">Next step — route the eluate</div>
         <p className="helper" style={{ marginBottom: 14 }}>
-          Load the purified NA tube into a GoDETECT or GoSEQ cartridge to continue the workflow.
+          Load the purified NA tube into a GoDETECT or GoSEQ cartridge to continue.
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <button
-            className="press btn"
-            style={{ justifyContent: "flex-start" }}
-            onClick={() => dispatch({ type: "SCAN_CARTRIDGE", appId: "godetect", lot: "GODX-DTCT-" + Math.floor(1000 + Math.random() * 9000) })}
-          >
-            → GoDETECT · pathogen + AMR
-          </button>
-          <button
-            className="press btn"
-            style={{ justifyContent: "flex-start" }}
-            onClick={() => dispatch({ type: "SCAN_CARTRIDGE", appId: "goseq", lot: "GODX-SEQ-" + Math.floor(1000 + Math.random() * 9000) })}
-          >
-            → GoSEQ · mNGS library prep
-          </button>
-        </div>
+        <button
+          className="press btn"
+          style={{ justifyContent: "flex-start" }}
+          onClick={() => dispatch({ type: "SCAN_CARTRIDGE", appId: "godetect", lot: "GODX-DTCT-" + Math.floor(1000 + Math.random() * 9000) })}
+        >
+          → GoDETECT · pathogen + AMR
+        </button>
+        <button
+          className="press btn"
+          style={{ justifyContent: "flex-start" }}
+          onClick={() => dispatch({ type: "SCAN_CARTRIDGE", appId: "goseq", lot: "GODX-SEQ-" + Math.floor(1000 + Math.random() * 9000) })}
+        >
+          → GoSEQ · mNGS library prep
+        </button>
       </div>
     </div>
   );
@@ -288,8 +325,7 @@ function SeqResults() {
   const atReport = step >= GOSEQ_DOWNSTREAM.length - 1;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "0.85fr 1.15fr", gap: 20, alignItems: "start" }}>
-      {/* Downstream stepper */}
+    <div className="results-grid">
       <div className="panel panel-pad">
         <div className="verdict verdict-positive" style={{ marginBottom: 16 }}>
           <div className="verdict-icon" style={{ background: "rgba(53,204,230,0.18)" }}>🧬</div>
@@ -326,8 +362,7 @@ function SeqResults() {
         </div>
       </div>
 
-      {/* BugSEQ classification */}
-      <div className="panel panel-pad">
+      <div className="panel panel-pad table-wrap">
         <div className="section-label">
           {atReport ? `${GOSEQ_KIT.bioinformatics} — metagenomic classification` : "Awaiting sequencing output"}
         </div>
@@ -354,12 +389,8 @@ function SeqResults() {
             <div className="divider" />
             <div className="grid grid-3" style={{ gap: 10 }}>
               <PerfStat label="total reads" value={MNGS_EXAMPLE.totalReads.toLocaleString()} />
-              <PerfStat label="assembled on-target" value={MNGS_EXAMPLE.onTargetAssembled} />
-              <PerfStat label="sample-to-library" value={GOSEQ_KIT.timeToLibrary} />
-            </div>
-            <div className="helper" style={{ marginTop: 12 }}>
-              Agnostic sequencing sees everything in the sample — including novel and drug-resistant organisms no
-              targeted panel can. Classification + AMR screening via {GOSEQ_KIT.bioinformatics}.
+              <PerfStat label="on-target" value={MNGS_EXAMPLE.onTargetAssembled} />
+              <PerfStat label="to library" value={GOSEQ_KIT.timeToLibrary} />
             </div>
           </div>
         ) : (
@@ -371,18 +402,4 @@ function SeqResults() {
       </div>
     </div>
   );
-}
-
-/* ---------- helpers ---------- */
-
-function summarize(appId: string, result: DetectResult | null, matrixId: string | null): string {
-  if (appId === "goprep") return `Purified NA · ${matrixId ? MATRICES[matrixId].name : "sample"}`;
-  if (appId === "goseq") return "Library ready → BugSEQ";
-  if (result) {
-    if (!result.positivePathogen) return "No target detected";
-    const name = PATHOGENS[result.positivePathogen].name;
-    const resistant = result.interpretation.avoid.length > 0;
-    return `${name} +${resistant ? ` · resists ${result.interpretation.avoid.length} drug(s)` : " · susceptible"}`;
-  }
-  return "Run complete";
 }

@@ -62,6 +62,10 @@ export interface DetectResult {
   snps: SnpCall[];
   interpretation: Interpretation;
   positivePathogen?: string;
+  /** Cartridge internal (procedural) control. Must be valid to report — CLIA QC gating. */
+  controlValid: boolean;
+  /** Control-line signal intensity (0–1); low intensity fails the run. */
+  controlSignal: number;
 }
 
 /**
@@ -115,6 +119,12 @@ export function runDetect(matrixId: string, seed: string, forcedPathogen?: strin
 
   const interpretation = interpret(snps.filter((s) => s.detected).map((s) => s.assayId));
 
+  // Internal procedural control: valid in the large majority of runs; a weak
+  // control line (<0.4) fails QC and blocks reporting (repeat the test).
+  const controlSignal = 0.5 + r() * 0.5;
+  const forcedInvalid = seed.toUpperCase().includes("QCFAIL");
+  const controlValid = !forcedInvalid && controlSignal >= 0.4;
+
   return {
     kind: "godetect",
     matrixId,
@@ -123,6 +133,8 @@ export function runDetect(matrixId: string, seed: string, forcedPathogen?: strin
     snps,
     interpretation,
     positivePathogen: positive,
+    controlValid,
+    controlSignal,
   };
 }
 

@@ -10,7 +10,8 @@
     "build": "node scripts/make-icons.mjs && tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "tsx src/engine/engine.test.ts"
+    "test": "tsx src/engine/engine.test.ts",
+    "stress": "tsx scripts/stress.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -1,35 +1,30 @@
 /**
- * Session store — the workflow state machine for one GoDEVICE run.
+ * Session store — clinical workflow state machine + governance layer.
  *
- * The reducer owns transitions only; all computation lives in the pure engine
- * (SURV engine/store split). Screens dispatch intents; the reducer advances the
- * clinical workflow: scan cartridge → configure → run → results.
+ * The reducer owns transitions; the pure engine computes. On top of the workflow
+ * (scan → configure → run → results) this store carries the compliance spine:
+ * operator identity, session lock, an append-only audit trail, minimal-PHI sample
+ * capture, and reviewed electronic sign-out. Audit entries are written inside the
+ * reducer on material transitions, so no screen can forget to log.
+ *
+ * Nothing here is persisted — session and results live in memory only (HIPAA
+ * "no PHI at rest" for the demo).
  */
 
 import { createContext, useContext, useReducer, type ReactNode } from "react";
 import type { AppId } from "../data/catalog";
+import type { Operator } from "../data/compliance";
 import type { DetectResult } from "../engine/run";
 
-export type Stage =
-  | "home" // device dashboard, awaiting cartridge
-  | "scan" // scanning / reading the cartridge QR
-  | "configure" // app-specific setup (sample type, review targets)
-  | "running" // run in progress
-  | "results"; // report
+export type Stage = "home" | "scan" | "configure" | "running" | "results";
 
-export interface SessionState {
-  stage: Stage;
-  appId: AppId | null;
-  matrixId: string | null;
-  /** Cartridge lot id read from the QR, doubles as the run seed. */
-  lot: string | null;
-  /** Optional forced positive to make a specific case reproducible in demos. */
-  forcedPathogen?: string;
-  runProgress: number; // 0..1
-  result: DetectResult | null;
-  /** GoSEQ downstream step index (flow-cell transfer → BugSEQ). */
-  seqStep: number;
-  history: RunRecord[];
+export interface AuditEvent {
+  id: string;
+  ts: number;
+  operatorId: string;
+  operatorName: string;
+  action: string;
+  detail: string;
 }
 
 export interface RunRecord {
@@ -37,22 +32,57 @@ export interface RunRecord {
   appId: AppId;
   matrixId: string | null;
   lot: string;
+  sampleId: string | null;
   when: number;
   summary: string;
+  signed: boolean;
+  operatorName: string;
+}
+
+export interface SessionState {
+  // governance
+  operator: Operator | null;
+  locked: boolean;
+  lastActivity: number;
+  audit: AuditEvent[];
+  // sample (minimal PHI)
+  sampleId: string | null;
+  patientRef: string | null;
+  // workflow
+  stage: Stage;
+  appId: AppId | null;
+  matrixId: string | null;
+  lot: string | null;
+  forcedPathogen?: string;
+  runProgress: number;
+  result: DetectResult | null;
+  seqStep: number;
+  signedOut: boolean;
+  signedBy: string | null;
+  history: RunRecord[];
 }
 
 type Action =
+  | { type: "SIGN_IN"; operator: Operator }
+  | { type: "SIGN_OUT_OPERATOR" }
+  | { type: "LOCK" }
+  | { type: "UNLOCK" }
+  | { type: "ACTIVITY" }
   | { type: "SCAN_CARTRIDGE"; appId: AppId; lot: string }
-  | { type: "RESET" }
   | { type: "SELECT_MATRIX"; matrixId: string; forcedPathogen?: string }
+  | { type: "SET_SAMPLE"; sampleId: string; patientRef: string | null }
   | { type: "START_RUN" }
   | { type: "SET_PROGRESS"; progress: number }
-  | { type: "COMPLETE_RUN"; result: DetectResult | null }
+  | { type: "COMPLETE_RUN"; result: DetectResult | null; summary: string }
   | { type: "SET_SEQ_STEP"; step: number }
+  | { type: "SIGN_RESULT" }
+  | { type: "RECORD"; record: RunRecord }
   | { type: "GO_HOME" }
-  | { type: "RECORD"; record: RunRecord };
+  | { type: "RESET" };
 
-const initial: SessionState = {
+const base: Omit<SessionState, "operator" | "audit" | "history" | "locked" | "lastActivity"> = {
+  sampleId: null,
+  patientRef: null,
   stage: "home",
   appId: null,
   matrixId: null,
@@ -61,39 +91,119 @@ const initial: SessionState = {
   runProgress: 0,
   result: null,
   seqStep: 0,
-  history: [],
+  signedOut: false,
+  signedBy: null,
 };
+
+const initial: SessionState = {
+  operator: null,
+  locked: false,
+  lastActivity: Date.now(),
+  audit: [],
+  history: [],
+  ...base,
+};
+
+let auditSeq = 0;
+function log(state: SessionState, action: string, detail: string): AuditEvent[] {
+  const op = state.operator;
+  const evt: AuditEvent = {
+    id: `a${Date.now()}-${auditSeq++}`,
+    ts: Date.now(),
+    operatorId: op?.id ?? "system",
+    operatorName: op?.name ?? "System",
+    action,
+    detail,
+  };
+  return [evt, ...state.audit].slice(0, 200);
+}
 
 function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
+    case "SIGN_IN":
+      return {
+        ...state,
+        operator: action.operator,
+        locked: false,
+        lastActivity: Date.now(),
+        audit: log({ ...state, operator: action.operator }, "Sign-in", `${action.operator.name} · ${action.operator.role}`),
+      };
+    case "SIGN_OUT_OPERATOR":
+      return {
+        ...initial,
+        audit: log(state, "Sign-out (operator)", state.operator?.name ?? ""),
+        // audit trail is retained across the operator change for accountability
+      };
+    case "LOCK":
+      if (!state.operator || state.locked) return state;
+      return { ...state, locked: true, audit: log(state, "Session locked", "Inactivity auto-lock") };
+    case "UNLOCK":
+      return { ...state, locked: false, lastActivity: Date.now(), audit: log(state, "Session unlocked", state.operator?.name ?? "") };
+    case "ACTIVITY":
+      return state.locked ? state : { ...state, lastActivity: Date.now() };
+
     case "SCAN_CARTRIDGE":
       return {
         ...state,
+        ...base,
         stage: "configure",
         appId: action.appId,
         lot: action.lot,
-        matrixId: null,
-        forcedPathogen: undefined,
-        result: null,
-        runProgress: 0,
-        seqStep: 0,
+        lastActivity: Date.now(),
+        audit: log(state, "Cartridge scanned", `${action.appId.toUpperCase()} · ${action.lot}`),
       };
     case "SELECT_MATRIX":
-      return { ...state, matrixId: action.matrixId, forcedPathogen: action.forcedPathogen };
+      return { ...state, matrixId: action.matrixId, forcedPathogen: action.forcedPathogen, lastActivity: Date.now() };
+    case "SET_SAMPLE":
+      return {
+        ...state,
+        sampleId: action.sampleId,
+        patientRef: action.patientRef,
+        lastActivity: Date.now(),
+        audit: log(state, "Sample accessioned", `ID ${action.sampleId}${action.patientRef ? " · patient ref set" : ""}`),
+      };
     case "START_RUN":
-      return { ...state, stage: "running", runProgress: 0, result: null };
+      return {
+        ...state,
+        stage: "running",
+        runProgress: 0,
+        result: null,
+        signedOut: false,
+        signedBy: null,
+        lastActivity: Date.now(),
+        audit: log(state, "Run started", `${state.appId?.toUpperCase()} · ${state.lot} · sample ${state.sampleId ?? "—"}`),
+      };
     case "SET_PROGRESS":
       return { ...state, runProgress: action.progress };
     case "COMPLETE_RUN":
-      return { ...state, stage: "results", runProgress: 1, result: action.result };
+      return {
+        ...state,
+        stage: "results",
+        runProgress: 1,
+        result: action.result,
+        audit: log(state, "Result generated", action.summary),
+      };
     case "SET_SEQ_STEP":
-      return { ...state, seqStep: action.step };
+      return { ...state, seqStep: action.step, lastActivity: Date.now() };
+    case "SIGN_RESULT": {
+      if (state.signedOut) return state;
+      // Reflect the signature on the most recent history record (the current run).
+      const history = state.history.map((h, i) => (i === 0 ? { ...h, signed: true } : h));
+      return {
+        ...state,
+        signedOut: true,
+        signedBy: state.operator?.name ?? null,
+        lastActivity: Date.now(),
+        history,
+        audit: log(state, "Result signed out", `${state.operator?.name ?? ""} · sample ${state.sampleId ?? "—"}`),
+      };
+    }
     case "RECORD":
-      return { ...state, history: [action.record, ...state.history].slice(0, 20) };
+      return { ...state, history: [action.record, ...state.history].slice(0, 30) };
     case "GO_HOME":
-      return { ...state, stage: "home", appId: null, matrixId: null, result: null, runProgress: 0, seqStep: 0 };
+      return { ...state, ...base, lastActivity: Date.now() };
     case "RESET":
-      return { ...initial, history: state.history };
+      return { ...initial, operator: state.operator, audit: state.audit, history: state.history };
     default:
       return state;
   }
@@ -110,4 +220,9 @@ export function useSession() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useSession must be used within SessionProvider");
   return ctx;
+}
+
+/** Whether the current operator holds a scope. */
+export function can(state: SessionState, scope: "run" | "sign_out" | "admin"): boolean {
+  return Boolean(state.operator?.scopes.includes(scope));
 }

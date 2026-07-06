@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { APPS } from "../data/catalog";
 import { useSession } from "../store/session";
 import { runDetect, stepFromProgress } from "../engine/run";
+import { summarize } from "../lib/format";
 
 /** Total simulated run duration by application (ms) — compressed for demo. */
 const DURATION: Record<string, number> = {
@@ -34,7 +35,7 @@ export function RunScreen() {
           producesDetect && s.matrixId
             ? runDetect(s.matrixId, s.lot ?? "LOT", s.forcedPathogen)
             : null;
-        dispatch({ type: "COMPLETE_RUN", result });
+        dispatch({ type: "COMPLETE_RUN", result, summary: summarize(appId, result, s.matrixId) });
       }
     }, 90);
     return () => clearInterval(timer);

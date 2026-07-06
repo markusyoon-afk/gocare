@@ -53,6 +53,13 @@ function check(name: string, cond: boolean) {
   check("SNPs only belong to the positive organism", forced.snps.every((s) => SNP_ASSAYS.find((x) => x.id === s.assayId)?.pathogen === "salmonella"));
 
   check("every matrix panel references real pathogens", Object.values(MATRICES).every((m) => m.panel.length > 0));
+
+  // QC / internal-control gating
+  check("normal run has a valid internal control", a.controlValid === true);
+  check("control signal in [0,1]", a.controlSignal >= 0 && a.controlSignal <= 1);
+  const qc = runDetect("stool", "LOT-QCFAIL-1");
+  check("QCFAIL seed forces an invalid control", qc.controlValid === false);
+  check("invalid control still deterministic", runDetect("stool", "LOT-QCFAIL-1").controlValid === false);
 }
 
 // --- prng sanity ---

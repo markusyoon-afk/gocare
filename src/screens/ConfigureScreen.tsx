@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   APPS,
   MATRICES,
@@ -8,7 +9,7 @@ import {
   GOSEQ_KIT,
   type AssayStatus,
 } from "../data/catalog";
-import { useSession } from "../store/session";
+import { useSession, can } from "../store/session";
 import { CartridgeCard } from "../components/Cartridge";
 
 const STATUS_LABEL: Record<AssayStatus, string> = {
@@ -29,25 +30,79 @@ export function ConfigureScreen() {
   const isSeq = appId === "goseq";
   const matrix = state.matrixId ? MATRICES[state.matrixId] : null;
 
-  const canRun = isSeq || Boolean(state.matrixId);
+  const [sid, setSid] = useState(state.sampleId ?? "");
+  const [pref, setPref] = useState(state.patientRef ?? "");
+
+  const hasSample = sid.trim().length > 0;
+  const canRun = can(state, "run") && hasSample && (isSeq || Boolean(state.matrixId));
+
+  function scanSample() {
+    // One tap = accession the sample (barcode-driven, GeneXpert/Liat convention).
+    const id = `ACC-${Math.floor(100000 + Math.random() * 899999)}`;
+    setSid(id);
+  }
+
+  function start() {
+    dispatch({ type: "SET_SAMPLE", sampleId: sid.trim(), patientRef: pref.trim() || null });
+    dispatch({ type: "START_RUN" });
+  }
 
   return (
     <div className="fade-in">
       <div className="page-head">
         <div className="eyebrow">{app.tm} · Cartridge loaded</div>
-        <h1 className="page-title">{isSeq ? "Set up sequencing library prep" : "Select the sample type"}</h1>
-        <p className="page-sub">{app.description}</p>
+        <h1 className="page-title">{isSeq ? "Accession &amp; set up library prep" : "Accession the sample"}</h1>
+        <p className="page-sub hide-compact">{app.description}</p>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: "1.55fr 1fr", alignItems: "start" }}>
+      <div className="cfg-grid">
         {/* LEFT: configuration */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+          {/* Step 1 — Sample accession (minimal PHI) */}
+          <div>
+            <div className="section-label">1 · Sample ID <span className="req">required</span></div>
+            <div className="panel panel-pad">
+              <div className="accession-row">
+                <input
+                  className="field"
+                  placeholder="Scan or enter Sample / Accession ID"
+                  value={sid}
+                  onChange={(e) => setSid(e.target.value)}
+                  aria-label="Sample or Accession ID"
+                  inputMode="text"
+                />
+                <button className="press btn btn-ghost scan-btn" onClick={scanSample}>
+                  ⧉ Scan
+                </button>
+              </div>
+              <details className="phi-details">
+                <summary>
+                  Add patient reference <span className="chip chip-snp" style={{ marginLeft: 6 }}>PHI · optional</span>
+                </summary>
+                <input
+                  className="field"
+                  style={{ marginTop: 10 }}
+                  placeholder="Patient reference (MRN / initials)"
+                  value={pref}
+                  onChange={(e) => setPref(e.target.value)}
+                  aria-label="Patient reference"
+                />
+                <div className="helper" style={{ marginTop: 8 }}>
+                  Minimum-necessary only. Stays on this device; never transmitted or written to storage.
+                </div>
+              </details>
+            </div>
+          </div>
+
           {isSeq ? (
-            <SeqSetup />
+            <div>
+              <div className="section-label">2 · Library prep</div>
+              <SeqSetup />
+            </div>
           ) : (
             <>
               <div>
-                <div className="section-label">Sample matrix</div>
+                <div className="section-label">2 · Sample matrix</div>
                 <div className="grid grid-2">
                   {MATRIX_ORDER.map((id) => {
                     const m = MATRICES[id];
@@ -60,20 +115,16 @@ export function ConfigureScreen() {
                       >
                         <div className="tile-meta">{m.category}</div>
                         <div className="tile-title">{m.name}</div>
-                        <div className="tile-desc">{m.swab}</div>
+                        <div className="tile-desc hide-compact">{m.swab}</div>
                         <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
                           {m.validated && <span className="chip chip-accent">VALIDATED</span>}
-                          {m.recovery && (
-                            <span className="chip">
-                              {m.recovery} recovery
-                            </span>
-                          )}
+                          {m.recovery && <span className="chip">{m.recovery} recovery</span>}
                         </div>
                       </button>
                     );
                   })}
                 </div>
-                <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <div className="roadmap-row hide-compact">
                   <span className="helper">On the roadmap:</span>
                   {ROADMAP_MATRICES.map((r) => (
                     <span key={r} className="chip chip-dev">
@@ -88,15 +139,19 @@ export function ConfigureScreen() {
           )}
         </div>
 
-        {/* RIGHT: cartridge + run */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 0 }}>
+        {/* RIGHT: run summary rail */}
+        <div className="cfg-rail">
           <div className="panel panel-pad">
-            <div className="section-label">Loaded cartridge</div>
+            <div className="section-label">Run summary</div>
             <CartridgeCard appId={appId} lot={state.lot!} />
             <div style={{ marginTop: 16 }}>
               <div className="kv">
-                <span className="k">Application</span>
-                <span className="v">{app.tm}</span>
+                <span className="k">Operator</span>
+                <span className="v">{state.operator?.initials ?? "—"}</span>
+              </div>
+              <div className="kv">
+                <span className="k">Sample ID</span>
+                <span className="v mono">{sid.trim() || "— required —"}</span>
               </div>
               <div className="kv">
                 <span className="k">Sample</span>
@@ -104,44 +159,44 @@ export function ConfigureScreen() {
               </div>
               <div className="kv">
                 <span className="k">Est. time</span>
-                <span className="v">{isSeq ? "<40 min to library" : appId === "godetect" ? "10–20 min" : "~25 min"}</span>
+                <span className="v">{isSeq ? "<40 min" : appId === "godetect" ? "10–20 min" : "~25 min"}</span>
               </div>
             </div>
           </div>
 
-          <button
-            className="press btn btn-primary"
-            style={{ width: "100%", padding: "16px" }}
-            disabled={!canRun}
-            onClick={() => dispatch({ type: "START_RUN" })}
-          >
+          <button className="press btn btn-primary run-btn" disabled={!canRun} onClick={start}>
             ▶ Start {app.name} run
           </button>
-          <button className="press btn btn-ghost" style={{ width: "100%" }} onClick={() => dispatch({ type: "GO_HOME" })}>
+          <button className="press btn btn-ghost" onClick={() => dispatch({ type: "GO_HOME" })}>
             Eject cartridge
           </button>
-          {!canRun && <div className="helper" style={{ textAlign: "center" }}>Select a sample type to enable the run.</div>}
+          {!canRun && (
+            <div className="helper" style={{ textAlign: "center" }}>
+              {!can(state, "run")
+                ? "Your role cannot start runs."
+                : !hasSample
+                ? "Scan a Sample ID to enable the run."
+                : "Select a sample type to enable the run."}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/** The pathogen ID panel + (for GoDETECT) the AMR SNP assays that will be interrogated. */
 function TargetPanel({ appId, matrixId }: { appId: string; matrixId: string }) {
   const matrix = MATRICES[matrixId];
   const panel = matrix.panel.map((id) => PATHOGENS[id]);
   const showAmr = appId === "godetect";
-  const amrAssays = showAmr
-    ? SNP_ASSAYS.filter((a) => matrix.panel.includes(a.pathogen))
-    : [];
+  const amrAssays = showAmr ? SNP_ASSAYS.filter((a) => matrix.panel.includes(a.pathogen)) : [];
 
   return (
-    <div className="fade-in">
+    <div className="fade-in hide-compact">
       <div className="section-label">
-        {showAmr ? "Targets on this cartridge — pathogen ID + AMR" : "Pathogen targets captured"}
+        {showAmr ? "3 · Targets on this cartridge — pathogen ID + AMR" : "Pathogen targets captured"}
       </div>
-      <div className="panel panel-pad">
+      <div className="panel panel-pad table-wrap">
         <table className="dtable">
           <thead>
             <tr>
@@ -210,30 +265,26 @@ function TargetPanel({ appId, matrixId }: { appId: string; matrixId: string }) {
 
 function SeqSetup() {
   return (
-    <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+    <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div className="panel panel-pad">
-        <div className="section-label">Agnostic metagenomic input</div>
         <p style={{ fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.55, margin: "0 0 14px" }}>
-          GoSEQ takes a single <b>raw, unpurified, agnostic</b> sample end-to-end in a sealed cartridge — no
-          pre-processing, no target panel. Lysis → cleanup → SPRI library runs automatically, then the library
-          transfers to the flow cell.
+          GoSEQ takes a single <b>raw, unpurified, agnostic</b> sample end-to-end in a sealed cartridge — no target
+          panel. Lysis → cleanup → SPRI library runs automatically, then transfers to the flow cell.
         </p>
-        <div className="grid grid-2">
-          <div className="kv"><span className="k">Library prep</span><span className="v">{GOSEQ_KIT.libraryPrep}</span></div>
+        <div className="grid grid-2 hide-compact">
           <div className="kv"><span className="k">Sequencer</span><span className="v">{GOSEQ_KIT.sequencer}</span></div>
-          <div className="kv"><span className="k">Edge compute</span><span className="v">{GOSEQ_KIT.compute}</span></div>
           <div className="kv"><span className="k">Classifier</span><span className="v">{GOSEQ_KIT.bioinformatics}</span></div>
         </div>
       </div>
       <div className="feature panel panel-pad">
         <div style={{ display: "flex", gap: 30, flexWrap: "wrap" }}>
           <div>
-            <div className="stat accent" style={{ fontSize: 30 }}>{GOSEQ_KIT.timeToLibrary}</div>
-            <div className="helper">Automated sample-to-library</div>
+            <div className="stat accent" style={{ fontSize: 28 }}>{GOSEQ_KIT.timeToLibrary}</div>
+            <div className="helper">Sample-to-library</div>
           </div>
           <div>
-            <div className="stat accent" style={{ fontSize: 30 }}>{GOSEQ_KIT.onTarget}</div>
-            <div className="helper">of assembled reads on-target</div>
+            <div className="stat accent" style={{ fontSize: 28 }}>{GOSEQ_KIT.onTarget}</div>
+            <div className="helper">on-target</div>
           </div>
         </div>
       </div>
