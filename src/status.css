@@ -359,3 +359,35 @@
   font-family: var(--font-display);
   background: #0b1218;
 }
+
+/* National surveillance (CDC NNDSS) rows */
+.nat-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 84px 104px;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.nat-row:last-child {
+  border-bottom: none;
+}
+.nat-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+.nat-spark {
+  min-width: 0;
+}
+.nat-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+@media (max-width: 720px) {
+  .nat-row {
+    grid-template-columns: 96px 1fr 68px;
+  }
+}

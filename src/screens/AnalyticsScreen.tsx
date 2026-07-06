@@ -1,5 +1,6 @@
 import { useSession } from "../store/session";
 import { unifiedHistory, dailySeries, byPathogen, trend, pathogenName } from "../lib/history";
+import { useNndss, nndssTotals } from "../lib/nndss";
 
 const DAYS = 28;
 
@@ -7,6 +8,8 @@ const DAYS = 28;
 export function AnalyticsScreen() {
   const { state } = useSession();
   const rows = unifiedHistory(state.history);
+  const { data: nndss, live } = useNndss();
+  const nat = nndssTotals(nndss);
 
   const totalPos = rows.filter((r) => r.pathogen).length;
   const resistant = rows.filter((r) => r.resistant).length;
@@ -72,10 +75,53 @@ export function AnalyticsScreen() {
         </div>
       </div>
 
+      {/* Real national surveillance benchmark — CDC NNDSS */}
+      <div className="section-label" style={{ marginTop: 24 }}>National surveillance benchmark · CDC NNDSS</div>
+      <div className="panel panel-pad">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+          <div className="helper">
+            Real U.S. weekly confirmed cases · {nndss.years[0]}–{nndss.latestYear} · {nndss.region} — compare your device
+            detections against the national trend.
+          </div>
+          <span className={"chip " + (live ? "chip-susceptible" : "")}>
+            {live ? "● LIVE · data.cdc.gov" : "◍ snapshot"}
+          </span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {nat.map((row) => (
+            <div key={row.id} className="nat-row">
+              <div className="nat-name">{pathogenName(row.id)}</div>
+              <div className="nat-spark"><Sparkline values={row.points.map((p) => p.cases)} /></div>
+              <div className="nat-metric"><span className="stat accent" style={{ fontSize: 18 }}>{row.latest.toLocaleString()}</span><span className="helper">latest wk</span></div>
+              <div className="nat-metric hide-compact"><span className="stat" style={{ fontSize: 18 }}>{row.total.toLocaleString()}</span><span className="helper">104-wk total</span></div>
+            </div>
+          ))}
+        </div>
+        <div className="helper" style={{ marginTop: 14 }}>
+          Source: {nndss.source} · dataset {nndss.dataset} · {nndss.metric} · retrieved {new Date(nndss.fetchedAt).toLocaleDateString()}.
+        </div>
+      </div>
+
       <div className="helper" style={{ marginTop: 14 }}>
-        Demo data is synthetic. In production these charts read live GoDEVICE results across the account.
+        Your GoDEVICE charts above use this session's runs plus seeded demo history; the national benchmark below is real
+        CDC data. In production both are live.
       </div>
     </div>
+  );
+}
+
+function Sparkline({ values }: { values: number[] }) {
+  const W = 240;
+  const H = 34;
+  if (values.length < 2) return null;
+  const max = Math.max(1, ...values);
+  const pts = values
+    .map((v, i) => `${((i / (values.length - 1)) * W).toFixed(1)},${(H - (v / max) * (H - 3) - 1.5).toFixed(1)}`)
+    .join(" ");
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" role="img" aria-label="52-week trend">
+      <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
   );
 }
 
