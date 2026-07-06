@@ -261,7 +261,7 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
 
         {positive && (
           <div className="panel panel-pad hide-compact">
-            <div className="section-label">Assay performance · vs culture</div>
+            <div className="section-label">Assay performance · illustrative</div>
             {(() => {
               const perf = CLINICAL_PERFORMANCE.find((p) => p.pathogen === positive.name);
               if (!perf) return <div className="helper">Reference performance not catalogued for this target.</div>;
@@ -338,7 +338,7 @@ function PrepResults() {
           <PerfStat label="No-template control" value="<0.1%" />
         </div>
         <div className="helper" style={{ marginTop: 14 }}>
-          Magnetic-bead chemistry: lysis → capture → wash → elution. Recovery relative to 1×10³ CFU/mL positive control (qPCR).
+          Magnetic-bead chemistry: lysis → capture → wash → elution. Recovery figures are illustrative demo values.
         </div>
       </div>
       <div className="panel panel-pad results-rail">

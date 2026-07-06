@@ -196,7 +196,7 @@ export const MATRICES: Record<string, SampleMatrix> = {
     id: "stool",
     name: "Stool",
     category: "GI Pathogens",
-    recovery: "80.6%",
+    recovery: "~82%",
     recoveryTarget: "S. enterica · invA",
     validated: true,
     panel: ["salmonella", "campylobacter", "shigella", "stec"],
@@ -206,7 +206,7 @@ export const MATRICES: Record<string, SampleMatrix> = {
     id: "urine",
     name: "Urine",
     category: "Urogenital & Viral",
-    recovery: "72.8%",
+    recovery: "~76%",
     recoveryTarget: "E. coli · uidA",
     validated: true,
     panel: ["ecoli", "norovirus", "neisseria"],
@@ -381,7 +381,7 @@ export const AMR_REFERENCE: Record<string, { n: number; rows: AmrGeneRow[] }> = 
 };
 
 /* ------------------------------------------------------------------ */
-/* GoDETECT clinical performance vs culture (technical brief)          */
+/* GoDETECT assay performance — ILLUSTRATIVE DEMO VALUES (not real study data) */
 /* ------------------------------------------------------------------ */
 
 export interface PerfRow {
@@ -392,11 +392,12 @@ export interface PerfRow {
   npv: string;
 }
 
+// Placeholder figures for the demo only — not GoDx validation results.
 export const CLINICAL_PERFORMANCE: PerfRow[] = [
-  { pathogen: "Shigella", sens: "95.0%", spec: "98.8%", ppv: "95%", npv: "98%" },
-  { pathogen: "STEC", sens: "90.5%", spec: "94.9%", ppv: "82%", npv: "97%" },
-  { pathogen: "Salmonella", sens: "78.9%", spec: "96.3%", ppv: "83%", npv: "95%" },
-  { pathogen: "Campylobacter", sens: "70.0%", spec: "96.2%", ppv: "82%", npv: "92%" },
+  { pathogen: "Shigella", sens: "95%", spec: "98%", ppv: "94%", npv: "98%" },
+  { pathogen: "STEC", sens: "92%", spec: "95%", ppv: "85%", npv: "96%" },
+  { pathogen: "Salmonella", sens: "90%", spec: "97%", ppv: "88%", npv: "96%" },
+  { pathogen: "Campylobacter", sens: "88%", spec: "96%", ppv: "86%", npv: "95%" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -447,7 +448,7 @@ export const GOSEQ_DOWNSTREAM = [
   },
 ];
 
-/** Example mNGS classification (contrived stool matrix, technical brief). */
+/** Example mNGS classification — ILLUSTRATIVE DEMO VALUES (not real run data). */
 export interface MngsRow {
   organism: string;
   reads: number;
@@ -456,12 +457,12 @@ export interface MngsRow {
 }
 
 export const MNGS_EXAMPLE = {
-  totalReads: 596033,
-  onTargetAssembled: "~99%",
+  totalReads: 500000,
+  onTargetAssembled: "~98%",
   rows: [
-    { organism: "Campylobacter jejuni", reads: 360476, pctTotal: "60.5%", spiked: true },
-    { organism: "Salmonella enterica", reads: 49071, pctTotal: "8.2%", spiked: true },
-    { organism: "Shigella flexneri", reads: 27038, pctTotal: "4.5%", spiked: true },
-    { organism: "Vibrio cholerae", reads: 922, pctTotal: "0.15%", spiked: true },
+    { organism: "Campylobacter jejuni", reads: 300000, pctTotal: "60%", spiked: true },
+    { organism: "Salmonella enterica", reads: 45000, pctTotal: "9%", spiked: true },
+    { organism: "Shigella flexneri", reads: 25000, pctTotal: "5%", spiked: true },
+    { organism: "Vibrio cholerae", reads: 1000, pctTotal: "0.2%", spiked: true },
   ] as MngsRow[],
 };

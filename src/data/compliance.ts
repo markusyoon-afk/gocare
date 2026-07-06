@@ -18,7 +18,7 @@ export const SOFTWARE = {
   version: "0.5.0",
   build: "SaMD · IVD workflow · connected fleet + surveillance",
   udiDi: "GODX-GOCARE-0003", // placeholder device identifier
-  classification: "CONFIDENTIAL // CUI",
+  classification: "DEMO",
   intendedUse: "Investigational Use Only — not for diagnostic procedures",
   sessionLockMs: 1800000, // AC-11 / HIPAA auto-logoff (30 min; production configurable)
 };
@@ -105,7 +105,7 @@ export const CONTROLS: ControlItem[] = [
   {
     id: "classification",
     title: "Data classification & marking",
-    detail: "CUI / Confidential banner is displayed persistently; Investigational-Use-Only labeling is fixed to every screen.",
+    detail: "Data-classification banner is displayed persistently; Investigational-Use-Only labeling is fixed to every screen.",
     frameworks: ["CMMC MP.L2-3.8.4", "FDA 21 CFR 809.10(c)"],
     layer: "app",
   },

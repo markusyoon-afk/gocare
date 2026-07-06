@@ -73,7 +73,7 @@ export function AccessGate({ onUnlock }: { onUnlock: () => void }) {
           Enter demo
         </button>
         <div className="auth-foot" style={{ justifyContent: "center" }}>
-          <span className="chip">CONFIDENTIAL // CUI</span>
+          <span className="chip">DEMO</span>
           <span className="helper">Investigational Use Only</span>
         </div>
       </form>
