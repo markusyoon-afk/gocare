@@ -1,7 +1,7 @@
 {
   "name": "gocare",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "description": "GoCARE — the GoDx software ecosystem for GoDEVICE. Cartridge-driven clinical workflow across GoPREP, GoDETECT, GoSEQ, and GoH2O.",
   "scripts": {

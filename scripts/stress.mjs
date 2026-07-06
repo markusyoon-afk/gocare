@@ -9,7 +9,8 @@
 
 import { runDetect } from "../src/engine/run.ts";
 import { interpret } from "../src/engine/resistance.ts";
-import { MATRICES, MATRIX_ORDER, SNP_ASSAYS, PATHOGENS } from "../src/data/catalog.ts";
+import { MATRICES, MATRIX_ORDER, SNP_ASSAYS, PATHOGENS, APP_ORDER } from "../src/data/catalog.ts";
+import { FLOWS, flowTotals, typicalLabel } from "../src/data/stages.ts";
 
 let checks = 0;
 let fails = 0;
@@ -88,7 +89,27 @@ for (let i = 0; i < N; i++) {
   seen.add(r.positivePathogen ?? "none");
 }
 
+// --- workflow / run-flow validation (every cartridge is runnable end to end) ---
+for (const app of APP_ORDER) {
+  const f = FLOWS[app];
+  assert(!!f, `${app} has a run flow`);
+  assert(f.stages.length >= 4, `${app} flow has >=4 stages`);
+  assert(f.demoMs > 0, `${app} flow has a demo duration`);
+  assert(f.stages.every((s) => s.estSec > 0 && s.label), `${app} stages have positive time + labels`);
+  const { total, cum } = flowTotals(f);
+  assert(total > 0, `${app} total est duration > 0`);
+  assert(cum.every((c, i) => i === 0 || c > cum[i - 1]), `${app} cumulative stage offsets strictly increase`);
+  assert(/^~/.test(typicalLabel(f)), `${app} typical-time label formatted (${typicalLabel(f)})`);
+  // Start-gating truth table: goseq needs only a sample; detect/goprep/goh2o need a matrix too.
+  const needsMatrix = app !== "goseq";
+  const runnable = (hasSample, hasMatrix) => hasSample && (!needsMatrix || hasMatrix);
+  assert(runnable(true, true) === true, `${app} runnable with sample + matrix`);
+  assert(runnable(false, true) === false, `${app} blocked without a sample`);
+  assert(runnable(true, false) === (app === "goseq"), `${app} matrix requirement correct`);
+}
+
 console.log(`\nStress: ${runs} runs · ${positives} positives · ${resistantRuns} with resistance · ${invalidRuns} QC-invalid`);
+console.log(`Workflow: validated run flows for ${APP_ORDER.join(", ")}`);
 console.log(`Distinct outcomes observed: ${[...seen].join(", ")}`);
 console.log(`${checks} assertions, ${fails} failed`);
 if (fails > 0) {

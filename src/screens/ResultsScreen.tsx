@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   APPS,
   MATRICES,
@@ -10,11 +10,13 @@ import {
   MNGS_EXAMPLE,
 } from "../data/catalog";
 import { useSession, can } from "../store/session";
+import { useDevice, activeDevice } from "../store/device";
 import { summarize, clinicalReadout } from "../lib/format";
 import type { DetectResult } from "../engine/run";
 
 export function ResultsScreen() {
   const { state, dispatch } = useSession();
+  const { state: dev } = useDevice();
   const appId = state.appId!;
   const app = APPS[appId];
 
@@ -23,6 +25,7 @@ export function ResultsScreen() {
   useEffect(() => {
     if (recorded.current) return;
     recorded.current = true;
+    const unit = activeDevice(dev);
     dispatch({
       type: "RECORD",
       record: {
@@ -35,6 +38,10 @@ export function ResultsScreen() {
         summary: summarize(appId, state.result, state.matrixId),
         signed: false,
         operatorName: state.operator?.name ?? "—",
+        location: unit.location?.label ?? unit.label,
+        deviceSerial: unit.serial,
+        pathogen: state.result?.positivePathogen ?? null,
+        resistant: (state.result?.interpretation.avoid.length ?? 0) > 0,
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -195,7 +202,7 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
               <div key={c.antibioticClass} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 13.5 }}>{c.antibioticClass}</span>
                 <span className={"chip " + (c.susceptibility === "resistant" ? "chip-resistant" : "chip-susceptible")}>
-                  {c.susceptibility.toUpperCase()}
+                  {c.susceptibility === "resistant" ? "RESISTANT" : "NO RESISTANCE"}
                 </span>
               </div>
             ))}
@@ -228,13 +235,16 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
         <div className="panel panel-pad">
           <div className="section-label">Review &amp; sign-out</div>
           {state.signedOut ? (
-            <div className="signed-box">
-              <div className="verdict-icon" style={{ background: "rgba(70,211,154,0.18)", width: 40, height: 40, fontSize: 18 }}>✓</div>
-              <div>
-                <div className="stat" style={{ fontSize: 15 }}>Signed out</div>
-                <div className="helper">{state.signedBy} · {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+            <>
+              <div className="signed-box">
+                <div className="verdict-icon" style={{ background: "rgba(70,211,154,0.18)", width: 40, height: 40, fontSize: 18 }}>✓</div>
+                <div>
+                  <div className="stat" style={{ fontSize: 15 }}>Signed out</div>
+                  <div className="helper">{state.signedBy} · {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+                </div>
               </div>
-            </div>
+              <EmrSend />
+            </>
           ) : can(state, "sign_out") ? (
             <>
               <div className="helper" style={{ marginBottom: 12 }}>
@@ -269,6 +279,31 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
       </div>
       </div>
     </>
+  );
+}
+
+function EmrSend() {
+  const { dispatch } = useSession();
+  const { state: dev } = useDevice();
+  const [sent, setSent] = useState(false);
+  if (!dev.integrations.emr) return null;
+  return (
+    <div style={{ marginTop: 12 }}>
+      {sent ? (
+        <div className="helper" style={{ color: "var(--green)" }}>✓ Sent to EMR as a FHIR DiagnosticReport.</div>
+      ) : (
+        <button
+          className="press btn btn-ghost"
+          style={{ width: "100%" }}
+          onClick={() => {
+            dispatch({ type: "EMR_SENT", target: "EMR (FHIR R4)" });
+            setSent(true);
+          }}
+        >
+          ⇪ Send to EMR (FHIR)
+        </button>
+      )}
+    </div>
   );
 }
 

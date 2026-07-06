@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   APPS,
   MATRICES,
   MATRIX_ORDER,
   ROADMAP_MATRICES,
+  ENV_SOURCES,
   PATHOGENS,
   SNP_ASSAYS,
   GOSEQ_KIT,
   type AssayStatus,
 } from "../data/catalog";
+import { FLOWS, typicalLabel } from "../data/stages";
 import { useSession, can } from "../store/session";
 import { CartridgeCard } from "../components/Cartridge";
 
@@ -32,6 +34,16 @@ export function ConfigureScreen() {
 
   const [sid, setSid] = useState(state.sampleId ?? "");
   const [pref, setPref] = useState(state.patientRef ?? "");
+
+  // GoH₂O is environmental — auto-select the wastewater/environmental panel and a
+  // default source so Start is never gated on a manual pick. (Fixes "Start won't work".)
+  useEffect(() => {
+    if (appId === "goh2o") {
+      if (!state.matrixId) dispatch({ type: "SELECT_MATRIX", matrixId: "wastewater" });
+      if (!state.envSource) dispatch({ type: "SET_ENV_SOURCE", source: "Wastewater" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appId, state.matrixId, state.envSource]);
 
   const hasSample = sid.trim().length > 0;
   const canRun = can(state, "run") && hasSample && (isSeq || Boolean(state.matrixId));
@@ -107,6 +119,27 @@ export function ConfigureScreen() {
               <div className="section-label">2 · Library prep</div>
               <SeqSetup />
             </div>
+          ) : appId === "goh2o" ? (
+            <>
+              <div>
+                <div className="section-label">2 · Environmental source</div>
+                <div className="panel panel-pad">
+                  <div className="helper" style={{ marginBottom: 8 }}>Where was this sample collected?</div>
+                  <div className="source-picker">
+                    {ENV_SOURCES.map((src) => (
+                      <button
+                        key={src}
+                        className={"press source-opt" + (state.envSource === src ? " selected" : "")}
+                        onClick={() => dispatch({ type: "SET_ENV_SOURCE", source: src })}
+                      >
+                        {src}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {matrix && <TargetPanel appId={appId} matrixId={matrix.id} />}
+            </>
           ) : (
             <>
               <div>
@@ -163,11 +196,11 @@ export function ConfigureScreen() {
               </div>
               <div className="kv">
                 <span className="k">Sample</span>
-                <span className="v">{isSeq ? "Raw / agnostic" : matrix ? matrix.name : "— select —"}</span>
+                <span className="v">{isSeq ? "Raw / agnostic" : appId === "goh2o" ? state.envSource ?? "Wastewater" : matrix ? matrix.name : "— select —"}</span>
               </div>
               <div className="kv">
-                <span className="k">Est. time</span>
-                <span className="v">{isSeq ? "<40 min" : appId === "godetect" ? "10–20 min" : "~25 min"}</span>
+                <span className="k">Typical run time</span>
+                <span className="v">{typicalLabel(FLOWS[appId])}</span>
               </div>
             </div>
           </div>
@@ -196,7 +229,7 @@ export function ConfigureScreen() {
 function TargetPanel({ appId, matrixId }: { appId: string; matrixId: string }) {
   const matrix = MATRICES[matrixId];
   const panel = matrix.panel.map((id) => PATHOGENS[id]);
-  const showAmr = appId === "godetect";
+  const showAmr = appId === "godetect" || appId === "goh2o";
   const amrAssays = showAmr ? SNP_ASSAYS.filter((a) => matrix.panel.includes(a.pathogen)) : [];
 
   return (

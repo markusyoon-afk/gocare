@@ -1,11 +1,12 @@
 import { APPS, type AppId } from "../data/catalog";
 import { FLOWS } from "../data/stages";
 import { useSession } from "../store/session";
-import { useDevice, inventorySummary } from "../store/device";
+import { useDevice, inventorySummary, activeDevice } from "../store/device";
 import { useLiveMirror } from "../lib/useLive";
 import { publish, isDeviceWindow } from "../lib/live";
-import { clinicalReadout } from "../lib/format";
+import { clinicalReadout, deviceStatus } from "../lib/format";
 import { StageTracker } from "../components/StageTracker";
+import { StatusLight } from "../components/DeviceStatusBar";
 
 /**
  * GoDEVICE touchscreen — the simplified instrument surface.
@@ -49,9 +50,11 @@ export function DeviceScreen({ kiosk = false }: { kiosk?: boolean }) {
   const staged = tele?.staged ?? (s.stage === "configure" && s.appId ? { appId: s.appId, lot: s.lot!, sampleId: s.sampleId } : null);
   const stagedReady = Boolean(staged && staged.sampleId);
 
-  const device = tele?.device ?? dev.device;
+  const unit = activeDevice(dev);
+  const device = tele?.device ?? { model: unit.model, serial: unit.serial, firmware: unit.firmware, label: unit.label };
   const clinic = tele?.clinic ?? dev.clinic.name;
   const inv = tele?.inventory ?? inventorySummary(dev).map((i) => ({ appId: i.appId, stock: i.stock, low: i.low }));
+  const status = tele?.status ?? deviceStatus(s.stage);
 
   const running = active && !active.done;
 
@@ -60,9 +63,9 @@ export function DeviceScreen({ kiosk = false }: { kiosk?: boolean }) {
       {/* Instrument header */}
       <div className="kiosk-head">
         <div className="kiosk-brand">
-          <div className="brand-mark">Go</div>
+          <StatusLight status={status} size={16} />
           <div>
-            <div className="kiosk-model">{device.model}</div>
+            <div className="kiosk-model">{device.label} · {device.model}</div>
             <div className="kiosk-serial mono">SN {device.serial} · fw {device.firmware}</div>
           </div>
         </div>

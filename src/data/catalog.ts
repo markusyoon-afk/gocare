@@ -49,8 +49,7 @@ export const APPS: Record<AppId, GoApp> = {
     name: "GoDETECT",
     tm: "GoDETECT™",
     tagline: "Pathogen + AMR detection",
-    stage: "Lead · FDA path",
-    lead: true,
+    stage: "FDA clearance path",
     accent: "#35CCE6",
     cartridge: "17 cm × 10 cm × 0.6 cm",
     qrPrefix: "GODX-DTCT",
@@ -235,6 +234,9 @@ export const MATRIX_ORDER = ["stool", "urine", "nasal", "wastewater"];
 
 /** Roadmap matrices — shown as coming-soon in the picker. */
 export const ROADMAP_MATRICES = ["Blood", "Saliva", "Expanded environmental"];
+
+/** GoH₂O environmental sources (all run on the wastewater/environmental panel). */
+export const ENV_SOURCES = ["Wastewater", "Lake", "Stream"];
 
 /* ------------------------------------------------------------------ */
 /* AMR SNP assays (the candidate SNP-detection panel)                  */

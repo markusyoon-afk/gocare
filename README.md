@@ -90,6 +90,36 @@ erythromycin. Use ciprofloxacin or ceftriaxone."* — mirrored on the GoDEVICE s
   automatically with the GoDx Store. Manual order, auto-reorder toggle, and order
   receipt included.
 
+## Connected fleet & status light
+
+A GoCARE account controls one or more registered **GoDEVICEs**; the active one is
+picked in the status bar (visible on every screen) or in Settings. The instrument's
+indicator light is derived live from the workflow and shown everywhere:
+
+- **Green (static)** — empty, ready to receive a cartridge
+- **Yellow (pulsing)** — processing (pressing Start on any cartridge turns it yellow)
+- **Red (static)** — finished cartridge still inserted
+
+## Surveillance: History & Analytics
+
+- **History** — every reported result as a log: unique cartridge ID, location, time,
+  and high-level call (no PHI).
+- **Analytics** — trend charts over the account's GoDEVICEs with a proactive
+  public-health signal (e.g. "Campylobacter up week-over-week — possible cluster")
+  to support early cluster detection, source tracing, and individual history.
+
+## CLIA-waived instructions & EMR
+
+- **How to run** — an 8-step, CLIA-waived, plain-language operating guide with the
+  indicator-light legend and per-cartridge stages.
+- **Integrations** — EMR (FHIR R4), LIS (HL7), and sequencer (Oxford Nanopore /
+  BugSEQ) connection points; signed results can be pushed to the EMR.
+
+## Clinical wording
+
+Molecular AMR detects *known* resistance markers only, so a wild-type result reads
+**"No resistance detected"** (never "susceptible" — that is a phenotypic/culture call).
+
 ## Responsive — iPad-first
 
 Optimized for iPad (bedside/bench), scaling up and down: full sidebar + multi-column

@@ -17,9 +17,7 @@ export function CartridgeCard({ appId, lot }: { appId: AppId; lot: string }) {
         <div className="mono" style={{ fontSize: 11, color: "var(--accent)", marginTop: 4, letterSpacing: "0.06em" }}>
           {lot}
         </div>
-        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-          {app.tagline} · {app.cartridge}
-        </div>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>{app.tagline}</div>
       </div>
     </div>
   );

@@ -15,8 +15,8 @@
 
 export const SOFTWARE = {
   name: "GoCARE",
-  version: "0.4.0",
-  build: "SaMD · IVD workflow · connected instrument",
+  version: "0.5.0",
+  build: "SaMD · IVD workflow · connected fleet + surveillance",
   udiDi: "GODX-GOCARE-0003", // placeholder device identifier
   classification: "CONFIDENTIAL // CUI",
   intendedUse: "Investigational Use Only — not for diagnostic procedures",

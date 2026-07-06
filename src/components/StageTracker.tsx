@@ -1,5 +1,4 @@
-import { flowTotals, type AppFlow } from "../data/stages";
-import { fmtClock } from "../lib/format";
+import { flowTotals, typicalLabel, type AppFlow } from "../data/stages";
 
 /**
  * StageTracker — the visible toll-gate progress bar.
@@ -41,8 +40,8 @@ export function StageTracker({
           <div className="tracker-stage-name">{done ? "Run complete" : active.label}</div>
         </div>
         <div className="tracker-clock">
-          <span className="stat accent">{done ? fmtClock(total) : fmtClock(elapsed)}</span>
-          <span className="tracker-total">/ {fmtClock(total)}</span>
+          <span className="tracker-typical-label">Typical run time</span>
+          <span className="stat accent" style={{ fontSize: 22 }}>{typicalLabel(flow)}</span>
         </div>
       </div>
 

@@ -64,13 +64,16 @@ export function RunScreen() {
 
       <div className="run-foot">
         <div className="run-instrument">
-          <div className="ring" style={{ width: 66, height: 66 }} />
+          <div className="ring ring-running" style={{ width: 66, height: 66 }} />
           <div>
             <div className="stat" style={{ fontSize: 18 }}>{app.tm}</div>
             <div className="helper">Walk-away · do not open the lid</div>
           </div>
         </div>
-        <div className="chip chip-accent live-tag">◉ Live to GoDEVICE</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span className="chip chip-accent live-tag">◉ Live to GoDEVICE</span>
+          <span className="chip chip-dev">Demo · accelerated</span>
+        </div>
       </div>
     </div>
   );

@@ -80,6 +80,16 @@ export function flowTotals(flow: AppFlow): { total: number; cum: number[] } {
   return { total: acc, cum };
 }
 
+/** Human "typical run time" label for the flow (real clinical duration). */
+export function typicalLabel(flow: AppFlow): string {
+  const min = Math.round(flowTotals(flow).total / 60);
+  if (min >= 90) {
+    const hr = min / 60;
+    return `~${Number.isInteger(hr) ? hr : hr.toFixed(1)} hr`;
+  }
+  return `~${min} min`;
+}
+
 /** Active stage index for an overall 0..1 progress. */
 export function stageAtProgress(flow: AppFlow, progress: number): number {
   const { total, cum } = flowTotals(flow);

@@ -1,0 +1,262 @@
+/* ==========================================================================
+   Device status light · global status bar · grouped nav · registry · analytics
+   (loaded after components.css)
+   ========================================================================== */
+
+/* Traffic-light status dot */
+.status-light {
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.sl-ready {
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(70, 211, 154, 0.7);
+}
+.sl-done {
+  background: var(--red);
+  box-shadow: 0 0 8px rgba(255, 107, 107, 0.75);
+}
+.sl-running {
+  background: var(--amber);
+  animation: slpulse 1.3s infinite;
+}
+@keyframes slpulse {
+  0% { box-shadow: 0 0 0 0 rgba(242, 178, 92, 0.65); }
+  70% { box-shadow: 0 0 0 7px rgba(242, 178, 92, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(242, 178, 92, 0); }
+}
+
+/* Global device status bar (in the classification bar) */
+.dsb {
+  position: relative;
+  margin-left: auto;
+}
+.dsb,
+.dsb button,
+.dsb * {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.dsb-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-2);
+  border-radius: 100px;
+  padding: 4px 12px 4px 10px;
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: 11px;
+  cursor: pointer;
+}
+.dsb-current:hover {
+  border-color: rgba(53, 204, 230, 0.4);
+}
+.dsb-name {
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 12px;
+}
+.dsb-serial,
+.dsb-state {
+  color: var(--muted);
+}
+.dsb-caret {
+  color: var(--muted);
+  font-size: 9px;
+}
+.dsb-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.dsb-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 41;
+  width: 300px;
+  max-width: calc(100vw - 28px);
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  box-shadow: var(--shadow-panel);
+  padding: 10px;
+}
+.dsb-menu-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  padding: 6px 8px;
+}
+.dsb-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: var(--ink);
+}
+.dsb-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.dsb-item.active {
+  border-color: rgba(53, 204, 230, 0.35);
+  background: rgba(53, 204, 230, 0.06);
+}
+.dsb-item-name {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+}
+.dsb-item-sub {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* Grouped sidebar nav */
+.sidebar {
+  overflow-y: auto;
+  gap: 14px;
+}
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 100px;
+}
+.nav-item {
+  padding: 9px 12px;
+}
+.nav-glyph {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  font-size: 13px;
+  color: var(--muted-2);
+  flex-shrink: 0;
+}
+.nav-item.active .nav-glyph {
+  color: var(--accent);
+}
+
+/* Device registry rows (Settings) */
+.device-reg {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+}
+.device-reg.active {
+  border-color: rgba(53, 204, 230, 0.4);
+  background: rgba(53, 204, 230, 0.05);
+}
+
+/* Test-menu legend */
+.menu-legend {
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding: 14px 20px;
+}
+.menu-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Analytics */
+.chart-legend {
+  display: flex;
+  gap: 18px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lg-swatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.alert-banner {
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .menu-legend {
+    gap: 12px;
+    flex-direction: column;
+  }
+  .dsb-name {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Status-colored instrument ring */
+.ring-ready {
+  border-top-color: var(--green);
+}
+.ring-running {
+  border-top-color: var(--amber);
+}
+.ring-done {
+  border-top-color: var(--red);
+}
+
+/* GoH₂O source picker */
+.source-picker {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.source-opt {
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+.source-opt.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 3px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--accent);
+}
+
+/* Stage tracker: stated typical-duration label (replaces the fake live clock) */
+.tracker-clock {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.tracker-typical-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}

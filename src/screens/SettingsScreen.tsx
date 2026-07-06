@@ -1,10 +1,36 @@
 import { OPERATORS, SOFTWARE } from "../data/compliance";
-import { useDevice } from "../store/device";
+import { useDevice, activeDevice, type Integrations } from "../store/device";
 
-/** Device registration & configuration — instrument identity, clinic, operators. */
+/** Device registration & configuration — fleet, clinic, operators, integrations. */
 export function SettingsScreen() {
   const { state, dispatch } = useDevice();
-  const { device, clinic, faceEnrolled, storeConnected } = state;
+  const { clinic, faceEnrolled, storeConnected, devices, integrations } = state;
+  const active = activeDevice(state);
+
+  function useMyLocation() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        dispatch({
+          type: "SET_LOCATION",
+          id: active.id,
+          location: { lat: latitude, lng: longitude, label: `${latitude.toFixed(3)}, ${longitude.toFixed(3)}` },
+        });
+      },
+      () => {},
+      { enableHighAccuracy: false, timeout: 8000 },
+    );
+  }
+
+  function registerDevice() {
+    const n = devices.length + 1;
+    const hex = Math.floor(Math.random() * 0xffffff).toString(16).toUpperCase().padStart(6, "0");
+    dispatch({
+      type: "REGISTER_DEVICE",
+      unit: { id: `gdx-${hex.toLowerCase()}`, model: "GoDEVICE One", serial: `GDX-1-24${hex}`, firmware: "3.1.4", label: `GoDEVICE ${n}`, location: null },
+    });
+  }
 
   return (
     <div className="fade-in">
@@ -12,81 +38,92 @@ export function SettingsScreen() {
         <div className="eyebrow">Device &amp; registration</div>
         <h1 className="page-title">Settings</h1>
         <p className="page-sub hide-compact">
-          Instrument identity, clinic registration, and operator enrollment. These bind every result and audit entry to
-          a device and a site.
+          Register and select the GoDEVICE under control, set its location, and configure clinic, operators, and
+          integrations. The active device drives every run and is shown in the status bar on every screen.
         </p>
       </div>
 
+      {/* GoDEVICE fleet */}
+      <div className="panel panel-pad" style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <div className="section-label" style={{ marginBottom: 0 }}>Registered GoDEVICEs</div>
+          <button className="press btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5 }} onClick={registerDevice}>+ Register device</button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+          {devices.map((d) => {
+            const isActive = d.id === active.id;
+            return (
+              <div key={d.id} className={"device-reg" + (isActive ? " active" : "")}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>{d.label}</div>
+                  <div className="mono helper">{d.serial} · fw {d.firmware}{d.location ? ` · 📍 ${d.location.label}` : " · no location"}</div>
+                </div>
+                {isActive ? (
+                  <>
+                    <button className="press btn btn-ghost" style={{ padding: "8px 12px", fontSize: 12 }} onClick={useMyLocation}>Set location</button>
+                    <span className="chip chip-accent">controlling</span>
+                  </>
+                ) : (
+                  <button className="press btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5 }} onClick={() => dispatch({ type: "SELECT_DEVICE", id: d.id })}>Control this</button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-2">
-        {/* Device identity */}
+        {/* Active device identity */}
         <div className="panel panel-pad">
-          <div className="section-label">GoDEVICE identity</div>
-          <div className="kv"><span className="k">Model</span><span className="v">{device.model}</span></div>
-          <div className="kv"><span className="k">Serial number</span><span className="v mono">{device.serial}</span></div>
-          <div className="kv"><span className="k">Firmware</span><span className="v mono">v{device.firmware}</span></div>
-          <div className="kv"><span className="k">UDI-DI (software)</span><span className="v mono">{SOFTWARE.udiDi}</span></div>
-          <div className="kv"><span className="k">GoCARE</span><span className="v">v{SOFTWARE.version} · {SOFTWARE.build}</span></div>
-          <div className="helper" style={{ marginTop: 10 }}>Identity is factory-provisioned and read-only in the field.</div>
+          <div className="section-label">Active GoDEVICE</div>
+          <div className="kv"><span className="k">Placement</span><span className="v">{active.label}</span></div>
+          <div className="kv"><span className="k">Model</span><span className="v">{active.model}</span></div>
+          <div className="kv"><span className="k">Serial number</span><span className="v mono">{active.serial}</span></div>
+          <div className="kv"><span className="k">Firmware</span><span className="v mono">v{active.firmware}</span></div>
+          <div className="kv"><span className="k">Thermal</span><span className="v mono">37.0°C</span></div>
+          <div className="kv"><span className="k">Location</span><span className="v">{active.location?.label ?? "— set below —"}</span></div>
+          <div className="kv"><span className="k">GoCARE / UDI-DI</span><span className="v mono">v{SOFTWARE.version} · {SOFTWARE.udiDi}</span></div>
         </div>
 
         {/* Clinic registration */}
         <div className="panel panel-pad">
           <div className="section-label">Clinic / site</div>
-          <Field label="Clinic name" value={clinic.name} onChange={(name) => dispatch({ type: "SET_CLINIC", clinic: { name } })} />
-          <Field label="Address" value={clinic.address} onChange={(address) => dispatch({ type: "SET_CLINIC", clinic: { address } })} />
-          <Field label="NPI" value={clinic.npi} onChange={(npi) => dispatch({ type: "SET_CLINIC", clinic: { npi } })} mono />
-          <Field label="Contact" value={clinic.contact} onChange={(contact) => dispatch({ type: "SET_CLINIC", clinic: { contact } })} mono />
+          <Field label="Clinic name" value={clinic.name} onChange={(name) => dispatch({ type: "SET_CLINIC", clinic: { name } })} sans />
+          <Field label="Address" value={clinic.address} onChange={(address) => dispatch({ type: "SET_CLINIC", clinic: { address } })} sans />
+          <Field label="NPI" value={clinic.npi} onChange={(npi) => dispatch({ type: "SET_CLINIC", clinic: { npi } })} />
+          <Field label="Contact" value={clinic.contact} onChange={(contact) => dispatch({ type: "SET_CLINIC", clinic: { contact } })} />
         </div>
 
-        {/* Operator registration */}
+        {/* Integrations */}
         <div className="panel panel-pad">
-          <div className="section-label">Registered operators</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="section-label">Integrations</div>
+          <IntegRow label="EMR (FHIR R4)" desc="Push signed results to the electronic medical record." on={integrations.emr} onToggle={() => dispatch({ type: "TOGGLE_INTEGRATION", key: "emr" })} />
+          <IntegRow label="LIS (HL7 v2)" desc="Laboratory information system order/result exchange." on={integrations.lis} onToggle={() => dispatch({ type: "TOGGLE_INTEGRATION", key: "lis" })} />
+          <IntegRow label="Sequencer · Oxford Nanopore / BugSEQ" desc="GoSEQ library hand-off and metagenomic reports." on={integrations.sequencer} onToggle={() => dispatch({ type: "TOGGLE_INTEGRATION", key: "sequencer" })} />
+          <div className="divider" />
+          <div className="kv"><span className="k">GoDx Store</span><span className={"chip " + (storeConnected ? "chip-susceptible" : "chip-resistant")}>{storeConnected ? "Connected" : "Offline"}</span></div>
+          <button className="press btn btn-ghost" style={{ width: "100%", marginTop: 10 }} onClick={() => dispatch({ type: "SET_STORE", connected: !storeConnected })}>
+            {storeConnected ? "Disconnect store" : "Reconnect store"}
+          </button>
+        </div>
+
+        {/* Operators + auth */}
+        <div className="panel panel-pad">
+          <div className="section-label">Operators &amp; sign-in</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
             {OPERATORS.map((op) => (
-              <div key={op.id} className="operator-row" style={{ boxShadow: "none", border: "1px solid var(--line)" }}>
-                <span className="avatar">{op.initials}</span>
+              <div key={op.id} className="operator-row" style={{ boxShadow: "none", border: "1px solid var(--line)", padding: "10px 12px" }}>
+                <span className="avatar" style={{ width: 26, height: 26, fontSize: 11 }}>{op.initials}</span>
                 <span style={{ flex: 1 }}>
-                  <span style={{ display: "block", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 14 }}>{op.name}</span>
+                  <span style={{ display: "block", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13.5 }}>{op.name}</span>
                   <span className="helper">{op.role}</span>
-                </span>
-                <span className="scopes">
-                  {op.scopes.includes("sign_out") && <span className="chip chip-accent">sign-out</span>}
-                  {op.scopes.includes("admin") && <span className="chip">admin</span>}
                 </span>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Authentication method */}
-        <div className="panel panel-pad">
-          <div className="section-label">Sign-in method</div>
-          <div className="kv">
-            <span className="k">Credentials (badge / PIN)</span>
-            <span className="chip chip-susceptible">Enabled</span>
-          </div>
-          <div className="kv">
-            <span className="k">Face scan</span>
-            <span className={"chip " + (faceEnrolled ? "chip-susceptible" : "chip-dev")}>{faceEnrolled ? "Enrolled" : "Not enrolled"}</span>
-          </div>
-          <button
-            className="press btn btn-ghost"
-            style={{ width: "100%", marginTop: 12 }}
-            onClick={() => dispatch({ type: "ENROLL_FACE", enrolled: !faceEnrolled })}
-          >
+          <div className="kv"><span className="k">Face scan</span><span className={"chip " + (faceEnrolled ? "chip-susceptible" : "chip-dev")}>{faceEnrolled ? "Enrolled" : "Not enrolled"}</span></div>
+          <button className="press btn btn-ghost" style={{ width: "100%", marginTop: 10 }} onClick={() => dispatch({ type: "ENROLL_FACE", enrolled: !faceEnrolled })}>
             {faceEnrolled ? "Remove face enrollment" : "◎ Enroll face scan"}
-          </button>
-          <div className="divider" />
-          <div className="kv">
-            <span className="k">GoDx Store connection</span>
-            <span className={"chip " + (storeConnected ? "chip-susceptible" : "chip-resistant")}>{storeConnected ? "Connected" : "Offline"}</span>
-          </div>
-          <button
-            className="press btn btn-ghost"
-            style={{ width: "100%", marginTop: 12 }}
-            onClick={() => dispatch({ type: "SET_STORE", connected: !storeConnected })}
-          >
-            {storeConnected ? "Disconnect store" : "Reconnect store"}
           </button>
         </div>
       </div>
@@ -94,11 +131,27 @@ export function SettingsScreen() {
   );
 }
 
-function Field({ label, value, onChange, mono }: { label: string; value: string; onChange: (v: string) => void; mono?: boolean }) {
+function IntegRow({ label, desc, on, onToggle }: { label: string; desc: string; on: boolean; onToggle: () => void }) {
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div className="helper" style={{ marginBottom: 5 }}>{label}</div>
-      <input className={"field" + (mono ? "" : " field-sans")} value={value} onChange={(e) => onChange(e.target.value)} aria-label={label} />
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--line)" }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 500 }}>{label}</div>
+        <div className="helper">{desc}</div>
+      </div>
+      <button className={"press btn " + (on ? "btn-primary" : "btn-ghost")} style={{ padding: "7px 14px", fontSize: 12 }} onClick={onToggle}>
+        {on ? "On" : "Off"}
+      </button>
     </div>
   );
 }
+
+function Field({ label, value, onChange, sans }: { label: string; value: string; onChange: (v: string) => void; sans?: boolean }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div className="helper" style={{ marginBottom: 5 }}>{label}</div>
+      <input className={"field" + (sans ? " field-sans" : "")} value={value} onChange={(e) => onChange(e.target.value)} aria-label={label} />
+    </div>
+  );
+}
+
+export type { Integrations };

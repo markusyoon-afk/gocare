@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { SessionProvider, useSession } from "./store/session";
-import { DeviceProvider, useDevice, inventorySummary } from "./store/device";
+import { DeviceProvider, useDevice, inventorySummary, activeDevice } from "./store/device";
 import { APPS, APP_ORDER, type AppId } from "./data/catalog";
 import { SOFTWARE } from "./data/compliance";
-import { clinicalReadout } from "./lib/format";
+import { clinicalReadout, deviceStatus } from "./lib/format";
 import { publish, subscribe, isDeviceWindow } from "./lib/live";
+import { DeviceStatusBar } from "./components/DeviceStatusBar";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ConfigureScreen } from "./screens/ConfigureScreen";
 import { RunScreen } from "./screens/RunScreen";
@@ -18,31 +19,37 @@ import { LockScreen } from "./screens/LockScreen";
 import { DeviceScreen } from "./screens/DeviceScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { InventoryScreen } from "./screens/InventoryScreen";
+import { HistoryScreen } from "./screens/HistoryScreen";
+import { AnalyticsScreen } from "./screens/AnalyticsScreen";
+import { InstructionsScreen } from "./screens/InstructionsScreen";
 
-type View = "workflow" | "device" | "inventory" | "menu" | "amr" | "audit" | "compliance" | "settings";
+type View =
+  | "workflow" | "device" | "instructions" | "history" | "analytics"
+  | "inventory" | "settings" | "menu" | "amr" | "audit" | "compliance";
 
-const NAV: { key: View; label: string; glyph: string }[] = [
-  { key: "workflow", label: "Dashboard", glyph: "▦" },
-  { key: "device", label: "GoDEVICE", glyph: "▣" },
-  { key: "inventory", label: "Inventory", glyph: "▤" },
-  { key: "menu", label: "Test Menu", glyph: "☰" },
-  { key: "amr", label: "AMR Library", glyph: "⚕" },
-  { key: "audit", label: "Audit", glyph: "◈" },
-  { key: "compliance", label: "Compliance", glyph: "⛨" },
-  { key: "settings", label: "Settings", glyph: "⚙" },
+const NAV: { key: View; label: string; glyph: string; section: string }[] = [
+  { key: "workflow", label: "Dashboard", glyph: "▦", section: "Run" },
+  { key: "device", label: "GoDEVICE", glyph: "▣", section: "Run" },
+  { key: "instructions", label: "How to run", glyph: "▷", section: "Run" },
+  { key: "history", label: "History", glyph: "◷", section: "Surveillance" },
+  { key: "analytics", label: "Analytics", glyph: "◔", section: "Surveillance" },
+  { key: "inventory", label: "Inventory", glyph: "▤", section: "Manage" },
+  { key: "settings", label: "Settings", glyph: "⚙", section: "Manage" },
+  { key: "menu", label: "Test Menu", glyph: "☰", section: "Reference" },
+  { key: "amr", label: "AMR Library", glyph: "⚕", section: "Reference" },
+  { key: "audit", label: "Audit", glyph: "◈", section: "Governance" },
+  { key: "compliance", label: "Compliance", glyph: "⛨", section: "Governance" },
 ];
-// Prioritized subset for the phone tab bar (keep it uncluttered).
-const PHONE_TABS: View[] = ["workflow", "device", "inventory", "menu", "audit"];
+const SECTIONS = ["Run", "Surveillance", "Manage", "Reference", "Governance"];
+const PHONE_TABS: View[] = ["workflow", "device", "history", "analytics", "inventory"];
 
 /** Bridges the console to the live link: telemetry out, commands in, cartridge use. */
 function LiveBridge() {
   const { state, dispatch } = useSession();
   const { state: dev, dispatch: devDispatch } = useDevice();
-
   const sessionRef = useRef(state);
   sessionRef.current = state;
 
-  // Consume one cartridge when a run starts (drives HaaS auto-reorder).
   const lastLot = useRef<string | null>(null);
   useEffect(() => {
     if (state.stage === "running" && state.lot && state.appId && lastLot.current !== state.lot) {
@@ -51,17 +58,18 @@ function LiveBridge() {
     }
   }, [state.stage, state.lot, state.appId, devDispatch]);
 
-  // Broadcast telemetry (and the finished result) so the GoDEVICE screen mirrors live.
   useEffect(() => {
     const send = () => {
+      const unit = activeDevice(dev);
       const staged =
         state.stage === "configure" && state.appId
           ? { appId: state.appId, lot: state.lot!, sampleId: state.sampleId }
           : null;
       publish({
         type: "telemetry",
-        device: dev.device,
+        device: { model: unit.model, serial: unit.serial, firmware: unit.firmware, label: unit.label },
         clinic: dev.clinic.name,
+        status: deviceStatus(state.stage),
         staged,
         inventory: inventorySummary(dev).map((i) => ({ appId: i.appId, stock: i.stock, low: i.low })),
       });
@@ -82,7 +90,6 @@ function LiveBridge() {
     return () => clearInterval(t);
   }, [state.stage, state.appId, state.lot, state.sampleId, state.result, dev]);
 
-  // Honor commands from the GoDEVICE touchscreen (e.g. Start pressed on the instrument).
   useEffect(
     () =>
       subscribe((e) => {
@@ -151,8 +158,8 @@ function Workspace() {
       <LiveBridge />
       <div className="classification-bar">
         <span>{SOFTWARE.classification}</span>
-        <span className="cb-mid hide-compact">GoDx GoCARE · SaMD</span>
-        <span>{SOFTWARE.intendedUse}</span>
+        <span className="cb-mid hide-compact">{SOFTWARE.intendedUse}</span>
+        <DeviceStatusBar />
       </div>
 
       <div className="shell">
@@ -165,16 +172,20 @@ function Workspace() {
             </div>
           </div>
 
-          <div className="nav-label">Workspace</div>
-          <nav className="nav">
-            {NAV.map((n) => (
-              <button key={n.key} className={"nav-item" + (view === n.key ? " active" : "")} onClick={() => nav(n.key)}>
-                <span className="nav-dot" /> {n.label}
-              </button>
-            ))}
-          </nav>
+          {SECTIONS.map((sec) => (
+            <div key={sec}>
+              <div className="nav-label">{sec}</div>
+              <nav className="nav">
+                {NAV.filter((n) => n.section === sec).map((n) => (
+                  <button key={n.key} className={"nav-item" + (view === n.key ? " active" : "")} onClick={() => nav(n.key)}>
+                    <span className="nav-glyph">{n.glyph}</span> {n.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          ))}
 
-          <div className="nav-label">Applications · scan to launch</div>
+          <div className="nav-label">Scan to launch</div>
           <nav className="nav">
             {APP_ORDER.map((id) => {
               const app = APPS[id];
@@ -187,16 +198,6 @@ function Workspace() {
               );
             })}
           </nav>
-
-          <div className="sidebar-foot">
-            <div className="device-chip">
-              <span className="pulse" />
-              <div>
-                <div className="dc-name">GoDEVICE</div>
-                <div className="dc-status">CONNECTED · v{SOFTWARE.version}</div>
-              </div>
-            </div>
-          </div>
         </aside>
 
         <main className="main">
@@ -226,29 +227,20 @@ function Workspace() {
           </header>
 
           <div className="scroll">
-            {view === "device" ? (
-              <DeviceScreen />
-            ) : view === "inventory" ? (
-              <InventoryScreen />
-            ) : view === "settings" ? (
-              <SettingsScreen />
-            ) : view === "menu" ? (
-              <MenuScreen />
-            ) : view === "amr" ? (
-              <AmrScreen />
-            ) : view === "audit" ? (
-              <AuditScreen />
-            ) : view === "compliance" ? (
-              <ComplianceScreen />
-            ) : state.stage === "home" ? (
-              <HomeScreen />
-            ) : state.stage === "configure" ? (
-              <ConfigureScreen />
-            ) : state.stage === "running" ? (
-              <RunScreen />
-            ) : (
-              <ResultsScreen />
-            )}
+            {view === "device" ? <DeviceScreen />
+              : view === "instructions" ? <InstructionsScreen />
+              : view === "history" ? <HistoryScreen />
+              : view === "analytics" ? <AnalyticsScreen />
+              : view === "inventory" ? <InventoryScreen />
+              : view === "settings" ? <SettingsScreen />
+              : view === "menu" ? <MenuScreen />
+              : view === "amr" ? <AmrScreen />
+              : view === "audit" ? <AuditScreen />
+              : view === "compliance" ? <ComplianceScreen />
+              : state.stage === "home" ? <HomeScreen />
+              : state.stage === "configure" ? <ConfigureScreen />
+              : state.stage === "running" ? <RunScreen />
+              : <ResultsScreen />}
           </div>
 
           <nav className="tabbar">
@@ -272,7 +264,6 @@ function Gate() {
   return <Workspace />;
 }
 
-/** Standalone GoDEVICE touchscreen window (?device=1) — no console chrome. */
 function DeviceWindow() {
   return (
     <div className="app-bg device-window">

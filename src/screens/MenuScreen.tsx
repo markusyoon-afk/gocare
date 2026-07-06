@@ -12,14 +12,28 @@ export function MenuScreen() {
   return (
     <div className="fade-in">
       <div className="page-head">
-        <div className="eyebrow">GoPREP · Complex matrices</div>
-        <h1 className="page-title">Test menu — sample types &amp; disease targets</h1>
-        <p className="page-sub">
-          Every matrix GoDEVICE processes today and the pathogen panel validated on each. Bacterial targets are
-          <span className="genome-dsdna"> dsDNA</span>; viral targets are <span className="genome-ssrna">ssRNA</span>.
-          Targets flagged <span className="chip chip-snp" style={{ verticalAlign: "middle" }}>SNP · AMR</span> also
-          carry resistance genotyping on GoDETECT.
+        <div className="eyebrow">Reference · what this GoDEVICE can test</div>
+        <h1 className="page-title">Test menu</h1>
+        <p className="page-sub hide-compact">
+          A read-only reference of the sample types and diseases this GoDEVICE is cleared to run — check here to see if a
+          test is available before you insert a cartridge.
         </p>
+      </div>
+
+      <div className="panel panel-pad menu-legend">
+        <div className="menu-legend-item">
+          <span className="chip chip-accent">VALIDATED</span>
+          <span className="helper">Completed analytical &amp; clinical validation on GoDEVICE — cleared to run today.</span>
+        </div>
+        <div className="menu-legend-item">
+          <span className="chip chip-snp">SNP · AMR</span>
+          <span className="helper">Also reports antibiotic resistance (which drugs won't work).</span>
+        </div>
+        <div className="menu-legend-item">
+          <span className="mono genome-dsdna">dsDNA</span>
+          <span className="genome-ssrna mono">ssRNA</span>
+          <span className="helper">Genome type — bacterial vs. viral.</span>
+        </div>
       </div>
 
       <div className="grid grid-2">

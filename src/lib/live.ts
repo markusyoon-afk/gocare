@@ -19,8 +19,9 @@ export type LiveEvent =
     }
   | {
       type: "telemetry";
-      device: { model: string; serial: string; firmware: string };
+      device: { model: string; serial: string; firmware: string; label: string };
       clinic: string;
+      status: "ready" | "running" | "done";
       staged: { appId: AppId; lot: string; sampleId: string | null } | null;
       inventory: { appId: AppId; stock: number; low: boolean }[];
     }

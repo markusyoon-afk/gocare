@@ -1,6 +1,26 @@
 import { MATRICES, PATHOGENS } from "../data/catalog";
 import type { DetectResult } from "../engine/run";
 
+export type DeviceStatus = "ready" | "running" | "done";
+
+/**
+ * GoDEVICE indicator-light status from the workflow stage:
+ *  ready  → green static  (empty, ready to receive a cartridge)
+ *  running→ yellow pulse  (processing)
+ *  done   → red static    (finished cartridge still inserted)
+ */
+export function deviceStatus(stage: string): DeviceStatus {
+  if (stage === "running") return "running";
+  if (stage === "results") return "done";
+  return "ready";
+}
+
+export const STATUS_META: Record<DeviceStatus, { label: string; hint: string }> = {
+  ready: { label: "Ready", hint: "Empty — ready to receive a cartridge" },
+  running: { label: "Processing", hint: "Run in progress" },
+  done: { label: "Cartridge in — done", hint: "Finished cartridge still inserted" },
+};
+
 /** Format seconds as m:ss, or h:mm:ss past an hour. */
 export function fmtClock(sec: number): string {
   const s = Math.max(0, Math.round(sec));
@@ -52,8 +72,8 @@ export function clinicalReadout(result: DetectResult): ClinicalReadout {
   }
   return {
     tone: "positive",
-    result: `${name} detected — susceptible`,
-    action: "No resistance detected. First-line therapy is appropriate.",
+    result: `${name} detected — no resistance detected`,
+    action: "No known resistance markers found. First-line therapy is appropriate per local guidelines.",
   };
 }
 

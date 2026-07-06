@@ -1,19 +1,28 @@
 /**
- * Device & HaaS store — the instrument's own state, separate from the clinical
- * session: GoDEVICE identity, clinic registration, operator enrollment, and the
- * cartridge inventory that drives Hardware-as-a-Service auto-reordering.
+ * Device & HaaS store — the fleet of GoDEVICE instruments registered to the
+ * account, the active one under control, cartridge inventory (Hardware-as-a-Service
+ * auto-reorder), clinic registration, and external integrations.
  *
- * Consuming a cartridge (on run start) decrements stock; when stock crosses the
- * safety threshold, an MOQ order is placed automatically with the GoDx store.
+ * A GoCARE account can have many GoDEVICEs; one is "active" and controlled at a time.
+ * Consuming a cartridge (on run start) decrements stock; crossing the safety
+ * threshold auto-orders an MOQ from the GoDx Store.
  */
 
 import { createContext, useContext, useReducer, type ReactNode } from "react";
 import { APP_ORDER, APPS, type AppId } from "../data/catalog";
 
-export interface DeviceInfo {
+export interface GeoLoc {
+  lat: number;
+  lng: number;
+  label: string;
+}
+export interface GoDeviceUnit {
+  id: string;
   model: string;
   serial: string;
   firmware: string;
+  label: string; // friendly placement name
+  location: GeoLoc | null;
 }
 export interface Clinic {
   name: string;
@@ -24,10 +33,10 @@ export interface Clinic {
 export interface CartridgeStock {
   stock: number;
   used: number;
-  threshold: number; // safety level that triggers reorder
-  moq: number; // minimum order quantity
+  threshold: number;
+  moq: number;
   autoReorder: boolean;
-  incoming: number; // units on an open order
+  incoming: number;
 }
 export interface StoreOrder {
   id: string;
@@ -37,14 +46,21 @@ export interface StoreOrder {
   status: "placed" | "received";
   auto: boolean;
 }
+export interface Integrations {
+  emr: boolean; // FHIR R4
+  lis: boolean; // HL7 v2
+  sequencer: boolean; // Oxford Nanopore / BugSEQ
+}
 
 export interface DeviceState {
-  device: DeviceInfo;
+  devices: GoDeviceUnit[];
+  activeId: string;
   clinic: Clinic;
   faceEnrolled: boolean;
   storeConnected: boolean;
   inventory: Record<AppId, CartridgeStock>;
   orders: StoreOrder[];
+  integrations: Integrations;
 }
 
 const MOQ = 10;
@@ -53,7 +69,25 @@ function stock(n: number, threshold: number, autoReorder = true): CartridgeStock
 }
 
 const initial: DeviceState = {
-  device: { model: "GoDEVICE One", serial: "GDX-1-24A7F309", firmware: "3.1.4" },
+  devices: [
+    {
+      id: "gdx-a7f3",
+      model: "GoDEVICE One",
+      serial: "GDX-1-24A7F309",
+      firmware: "3.1.4",
+      label: "Front Desk",
+      location: { lat: 43.0731, lng: -89.4012, label: "Madison, WI" },
+    },
+    {
+      id: "gdx-b2c8",
+      model: "GoDEVICE One",
+      serial: "GDX-1-24B2C817",
+      firmware: "3.1.4",
+      label: "Triage Room 2",
+      location: { lat: 43.0759, lng: -89.3841, label: "Madison, WI" },
+    },
+  ],
+  activeId: "gdx-a7f3",
   clinic: {
     name: "Riverside Urgent Care",
     address: "1420 Water St, Madison, WI 53703",
@@ -64,11 +98,12 @@ const initial: DeviceState = {
   storeConnected: true,
   inventory: {
     goprep: stock(22, 8),
-    godetect: stock(9, 8), // seeded low so the first run demonstrates auto-reorder
+    godetect: stock(9, 8), // seeded low to demonstrate auto-reorder
     goseq: stock(11, 4),
     goh2o: stock(10, 6),
   },
   orders: [],
+  integrations: { emr: true, lis: false, sequencer: true },
 };
 
 type Action =
@@ -77,9 +112,13 @@ type Action =
   | { type: "RECEIVE"; id: string }
   | { type: "TOGGLE_AUTO"; appId: AppId }
   | { type: "SET_CLINIC"; clinic: Partial<Clinic> }
-  | { type: "SET_DEVICE"; device: Partial<DeviceInfo> }
+  | { type: "SELECT_DEVICE"; id: string }
+  | { type: "REGISTER_DEVICE"; unit: GoDeviceUnit }
+  | { type: "SET_LOCATION"; id: string; location: GeoLoc }
+  | { type: "SET_DEVICE_LABEL"; id: string; label: string }
   | { type: "ENROLL_FACE"; enrolled: boolean }
-  | { type: "SET_STORE"; connected: boolean };
+  | { type: "SET_STORE"; connected: boolean }
+  | { type: "TOGGLE_INTEGRATION"; key: keyof Integrations };
 
 let orderSeq = 0;
 function placeOrder(state: DeviceState, appId: AppId, auto: boolean): DeviceState {
@@ -105,7 +144,6 @@ function reducer(state: DeviceState, action: Action): DeviceState {
       const inv = state.inventory[action.appId];
       const next = { ...inv, stock: Math.max(0, inv.stock - 1), used: inv.used + 1 };
       let s = { ...state, inventory: { ...state.inventory, [action.appId]: next } };
-      // Auto-reorder when at/below the safety threshold and nothing already inbound.
       if (next.autoReorder && next.stock <= next.threshold && next.incoming === 0 && state.storeConnected) {
         s = placeOrder(s, action.appId, true);
       }
@@ -132,12 +170,20 @@ function reducer(state: DeviceState, action: Action): DeviceState {
     }
     case "SET_CLINIC":
       return { ...state, clinic: { ...state.clinic, ...action.clinic } };
-    case "SET_DEVICE":
-      return { ...state, device: { ...state.device, ...action.device } };
+    case "SELECT_DEVICE":
+      return state.devices.some((d) => d.id === action.id) ? { ...state, activeId: action.id } : state;
+    case "REGISTER_DEVICE":
+      return { ...state, devices: [...state.devices, action.unit], activeId: action.unit.id };
+    case "SET_LOCATION":
+      return { ...state, devices: state.devices.map((d) => (d.id === action.id ? { ...d, location: action.location } : d)) };
+    case "SET_DEVICE_LABEL":
+      return { ...state, devices: state.devices.map((d) => (d.id === action.id ? { ...d, label: action.label } : d)) };
     case "ENROLL_FACE":
       return { ...state, faceEnrolled: action.enrolled };
     case "SET_STORE":
       return { ...state, storeConnected: action.connected };
+    case "TOGGLE_INTEGRATION":
+      return { ...state, integrations: { ...state.integrations, [action.key]: !state.integrations[action.key] } };
     default:
       return state;
   }
@@ -156,7 +202,10 @@ export function useDevice() {
   return ctx;
 }
 
-/** Compact inventory summary for telemetry / glanceable views. */
+export function activeDevice(state: DeviceState): GoDeviceUnit {
+  return state.devices.find((d) => d.id === state.activeId) ?? state.devices[0];
+}
+
 export function inventorySummary(state: DeviceState) {
   return APP_ORDER.map((appId) => {
     const inv = state.inventory[appId];

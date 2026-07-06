@@ -31,12 +31,16 @@ export interface RunRecord {
   id: string;
   appId: AppId;
   matrixId: string | null;
-  lot: string;
+  lot: string; // unique cartridge id
   sampleId: string | null;
   when: number;
   summary: string;
   signed: boolean;
   operatorName: string;
+  location: string;
+  deviceSerial: string;
+  pathogen: string | null;
+  resistant: boolean;
 }
 
 export interface SessionState {
@@ -48,6 +52,7 @@ export interface SessionState {
   // sample (minimal PHI)
   sampleId: string | null;
   patientRef: string | null;
+  envSource: string | null; // GoH₂O environmental source (Wastewater / Lake / Stream)
   // workflow
   stage: Stage;
   appId: AppId | null;
@@ -70,12 +75,14 @@ type Action =
   | { type: "ACTIVITY" }
   | { type: "SCAN_CARTRIDGE"; appId: AppId; lot: string }
   | { type: "SELECT_MATRIX"; matrixId: string; forcedPathogen?: string }
+  | { type: "SET_ENV_SOURCE"; source: string }
   | { type: "SET_SAMPLE"; sampleId: string; patientRef: string | null }
   | { type: "START_RUN" }
   | { type: "SET_PROGRESS"; progress: number }
   | { type: "COMPLETE_RUN"; result: DetectResult | null; summary: string }
   | { type: "SET_SEQ_STEP"; step: number }
   | { type: "SIGN_RESULT" }
+  | { type: "EMR_SENT"; target: string }
   | { type: "RECORD"; record: RunRecord }
   | { type: "GO_HOME" }
   | { type: "RESET" };
@@ -83,6 +90,7 @@ type Action =
 const base: Omit<SessionState, "operator" | "audit" | "history" | "locked" | "lastActivity"> = {
   sampleId: null,
   patientRef: null,
+  envSource: null,
   stage: "home",
   appId: null,
   matrixId: null,
@@ -154,6 +162,8 @@ function reducer(state: SessionState, action: Action): SessionState {
       };
     case "SELECT_MATRIX":
       return { ...state, matrixId: action.matrixId, forcedPathogen: action.forcedPathogen, lastActivity: Date.now() };
+    case "SET_ENV_SOURCE":
+      return { ...state, envSource: action.source, lastActivity: Date.now() };
     case "SET_SAMPLE":
       return {
         ...state,
@@ -198,6 +208,8 @@ function reducer(state: SessionState, action: Action): SessionState {
         audit: log(state, "Result signed out", `${state.operator?.name ?? ""} · sample ${state.sampleId ?? "—"}`),
       };
     }
+    case "EMR_SENT":
+      return { ...state, audit: log(state, "Sent to EMR", `${action.target} · sample ${state.sampleId ?? "—"}`) };
     case "RECORD":
       return { ...state, history: [action.record, ...state.history].slice(0, 30) };
     case "GO_HOME":
