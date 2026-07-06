@@ -1,0 +1,27 @@
+{
+  "name": "gocare",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "GoCARE — the GoDx software ecosystem for GoDEVICE. Cartridge-driven clinical workflow across GoPREP, GoDETECT, GoSEQ, and GoH2O.",
+  "scripts": {
+    "dev": "vite",
+    "icons": "node scripts/make-icons.mjs",
+    "build": "node scripts/make-icons.mjs && tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx src/engine/engine.test.ts"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}
