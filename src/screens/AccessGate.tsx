@@ -9,7 +9,7 @@ import { hashSeed } from "../engine/run";
  * unlisted URL. Unlock persists in localStorage so a second window (the GoDEVICE
  * kiosk, ?device=1) doesn't re-prompt.
  */
-const EXPECTED = 1550535846; // hashSeed("godx-demo-2026")
+const EXPECTED = 3788775592; // hashSeed("GoCARE2026")
 export const ACCESS_KEY = "gocare-access";
 
 export function isUnlocked(): boolean {
