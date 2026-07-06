@@ -1,23 +1,18 @@
 /**
- * GoCARE service worker — offline app shell for the installable PWA.
+ * GoCARE service worker — network-first so online users always get the latest.
  *
- * Playbook pitfall #1 (the hard one): the offline fallback is NAVIGATE-ONLY.
- * We never return cached index.html for a failed *script/asset* request —
- * doing so executes HTML as JS and bricks the installed app. Navigations get
- * the cached shell; assets are cache-first with a network fill, and a failed
- * asset simply fails (no HTML substitution).
+ * Lesson from the field: a cache-first shell serves stale builds after a redeploy
+ * (the "my changes aren't showing" trap). For an actively-updated demo we go
+ * network-first: fetch fresh when online, fall back to cache only when offline.
+ * The offline fallback stays navigate-only (playbook pitfall #1) so a failed
+ * asset request never gets HTML in its place.
  */
 
-const CACHE = "gocare-v1";
+const CACHE = "gocare-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((c) => c.addAll(SHELL))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
@@ -32,31 +27,24 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
-
   const url = new URL(req.url);
-  // Leave cross-origin (Google Fonts, etc.) to the browser.
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) return; // leave cross-origin (fonts) alone
 
-  // Navigations: network-first, fall back to the cached shell. NAVIGATE-ONLY fallback.
-  if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req).catch(() => caches.match("./index.html").then((r) => r || caches.match("./"))),
-    );
-    return;
-  }
-
-  // Same-origin assets: cache-first, then network (and cache what we fetch).
+  // Network-first: always try the network, refresh the cache, fall back only offline.
   event.respondWith(
-    caches.match(req).then(
-      (hit) =>
-        hit ||
-        fetch(req).then((res) => {
-          if (res.ok && res.type === "basic") {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        }),
-    ),
+    fetch(req)
+      .then((res) => {
+        if (res && res.ok && res.type === "basic") {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(async () => {
+        const cached = await caches.match(req);
+        if (cached) return cached;
+        if (req.mode === "navigate") return (await caches.match("./index.html")) || (await caches.match("./"));
+        return Response.error();
+      }),
   );
 });
