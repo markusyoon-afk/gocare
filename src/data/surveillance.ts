@@ -25,8 +25,8 @@ export interface SurvRecord {
 
 const DAY = 86400000;
 const LOCATIONS = [
-  { label: "Front Desk", serial: "GDX-1-24A7F309" },
-  { label: "Triage Room 2", serial: "GDX-1-24B2C817" },
+  { label: "Urgent Care", serial: "GDX-1-24A7F309" },
+  { label: "In Field", serial: "GDX-1-24B2C817" },
 ];
 const MATRIX_BY_PATH: Record<string, string> = {
   salmonella: "stool",

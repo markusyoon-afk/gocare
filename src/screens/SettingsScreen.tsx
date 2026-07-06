@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { OPERATORS, SOFTWARE } from "../data/compliance";
 import { useDevice, activeDevice, type Integrations } from "../store/device";
 
@@ -6,20 +7,26 @@ export function SettingsScreen() {
   const { state, dispatch } = useDevice();
   const { clinic, faceEnrolled, storeConnected, devices, integrations } = state;
   const active = activeDevice(state);
+  const [geo, setGeo] = useState<"idle" | "locating" | "ok" | "error">("idle");
 
   function useMyLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setGeo("error");
+      return;
+    }
+    setGeo("locating");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         dispatch({
           type: "SET_LOCATION",
           id: active.id,
-          location: { lat: latitude, lng: longitude, label: `${latitude.toFixed(3)}, ${longitude.toFixed(3)}` },
+          location: { lat: latitude, lng: longitude, label: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` },
         });
+        setGeo("ok");
       },
-      () => {},
-      { enableHighAccuracy: false, timeout: 8000 },
+      () => setGeo("error"),
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   }
 
@@ -55,14 +62,24 @@ export function SettingsScreen() {
             return (
               <div key={d.id} className={"device-reg" + (isActive ? " active" : "")}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>{d.label}</div>
-                  <div className="mono helper">{d.serial} · fw {d.firmware}{d.location ? ` · 📍 ${d.location.label}` : " · no location"}</div>
+                  <input
+                    className="field field-sans device-label-input"
+                    value={d.label}
+                    onChange={(e) => dispatch({ type: "SET_DEVICE_LABEL", id: d.id, label: e.target.value })}
+                    aria-label="Device name"
+                  />
+                  <div className="mono helper" style={{ marginTop: 4 }}>
+                    {d.serial} · fw {d.firmware}{d.location ? ` · 📍 ${d.location.label}` : " · no location"}
+                  </div>
                 </div>
                 {isActive ? (
-                  <>
-                    <button className="press btn btn-ghost" style={{ padding: "8px 12px", fontSize: 12 }} onClick={useMyLocation}>Set location</button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                    <button className="press btn btn-ghost" style={{ padding: "8px 12px", fontSize: 12 }} onClick={useMyLocation} disabled={geo === "locating"}>
+                      {geo === "locating" ? "Locating…" : "📍 Use GPS"}
+                    </button>
                     <span className="chip chip-accent">controlling</span>
-                  </>
+                    {geo === "error" && <span className="helper" style={{ color: "var(--amber)" }}>Location blocked</span>}
+                  </div>
                 ) : (
                   <button className="press btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5 }} onClick={() => dispatch({ type: "SELECT_DEVICE", id: d.id })}>Control this</button>
                 )}

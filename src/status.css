@@ -303,3 +303,59 @@
 .signin-face {
   width: 100%;
 }
+
+/* Clickable cartridge tiles → informatics */
+.kiosk-inv-item {
+  cursor: pointer;
+  text-align: center;
+}
+.kiosk-inv-hint {
+  font-size: 9px;
+  color: var(--muted-2);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+.kiosk-inv-item:hover .kiosk-inv-hint {
+  color: var(--accent);
+}
+
+/* Per-cartridge stats modal */
+.stats-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(4, 8, 12, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.stats-modal {
+  width: 100%;
+  max-width: 640px;
+  max-height: 86vh;
+  overflow-y: auto;
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  box-shadow: var(--shadow-panel);
+  padding: 24px;
+}
+.stats-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Editable device name in Settings */
+.device-label-input {
+  padding: 7px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  background: #0b1218;
+}

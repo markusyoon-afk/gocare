@@ -1,10 +1,12 @@
-import { APPS, type AppId } from "../data/catalog";
+import { useState } from "react";
+import { APPS, MATRICES, type AppId } from "../data/catalog";
 import { FLOWS } from "../data/stages";
 import { useSession } from "../store/session";
 import { useDevice, inventorySummary, activeDevice } from "../store/device";
 import { useLiveMirror } from "../lib/useLive";
 import { publish, isDeviceWindow } from "../lib/live";
 import { clinicalReadout, deviceStatus } from "../lib/format";
+import { unifiedHistory, pathogenName } from "../lib/history";
 import { StageTracker } from "../components/StageTracker";
 import { StatusLight } from "../components/DeviceStatusBar";
 
@@ -20,6 +22,7 @@ export function DeviceScreen({ kiosk = false }: { kiosk?: boolean }) {
   const { state: s } = useSession();
   const { state: dev } = useDevice();
   const { run: liveRun, runAt, tele } = useLiveMirror();
+  const [statsApp, setStatsApp] = useState<AppId | null>(null);
 
   const liveFresh = Date.now() - runAt < 10000;
 
@@ -123,16 +126,97 @@ export function DeviceScreen({ kiosk = false }: { kiosk?: boolean }) {
         )}
       </div>
 
-      {/* Cartridge inventory glance */}
+      {/* Cartridge inventory — tap a cartridge for its informatics */}
       <div className="kiosk-inv">
         {inv.map((c) => (
-          <div key={c.appId} className={"kiosk-inv-item" + (c.low ? " low" : "")}>
+          <button key={c.appId} className={"press kiosk-inv-item" + (c.low ? " low" : "")} onClick={() => setStatsApp(c.appId)}>
             <span className="kiosk-inv-name">{APPS[c.appId].name}</span>
             <span className="kiosk-inv-stock stat">{c.stock}</span>
-            {c.low && <span className="chip chip-snp">LOW</span>}
-          </div>
+            <span className="kiosk-inv-hint">{c.low ? "LOW · view stats ›" : "view stats ›"}</span>
+          </button>
         ))}
       </div>
+
+      {statsApp && <CartridgeStatsModal appId={statsApp} onClose={() => setStatsApp(null)} />}
+    </div>
+  );
+}
+
+/** Per-cartridge informatics — detections, dates, locations for this application. */
+function CartridgeStatsModal({ appId, onClose }: { appId: AppId; onClose: () => void }) {
+  const { state: s } = useSession();
+  const { state: dev } = useDevice();
+  const app = APPS[appId];
+  const inv = dev.inventory[appId];
+  const rows = unifiedHistory(s.history).filter((r) => r.appId === appId);
+  const isDetection = appId === "godetect" || appId === "goh2o";
+  const positives = rows.filter((r) => r.pathogen).length;
+  const resistant = rows.filter((r) => r.resistant).length;
+
+  return (
+    <div className="stats-overlay" onClick={onClose}>
+      <div className="stats-modal fade-in" onClick={(e) => e.stopPropagation()}>
+        <div className="stats-head">
+          <div>
+            <div className="stat" style={{ fontSize: 20 }}>{app.tm}</div>
+            <div className="helper">{app.tagline}</div>
+          </div>
+          <button className="press btn btn-ghost" style={{ padding: "8px 14px" }} onClick={onClose}>Close</button>
+        </div>
+
+        <div className="grid grid-4 posture-strip" style={{ marginBottom: 16 }}>
+          <MiniStat label="In stock" value={String(inv.stock)} />
+          <MiniStat label="Used" value={String(inv.used)} />
+          {isDetection ? <MiniStat label="Detections" value={String(positives)} /> : <MiniStat label="Runs logged" value={String(rows.length)} />}
+          {isDetection ? <MiniStat label="Resistant" value={String(resistant)} /> : <MiniStat label="Type" value="Prep" />}
+        </div>
+
+        {isDetection ? (
+          rows.length === 0 ? (
+            <div className="empty">No results logged for {app.name} yet.</div>
+          ) : (
+            <div className="table-wrap">
+              <table className="dtable">
+                <thead>
+                  <tr>
+                    <th>Date · time</th>
+                    <th>Result</th>
+                    <th className="hide-compact">Location</th>
+                    <th style={{ textAlign: "right" }}>AMR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.slice(0, 40).map((r, i) => (
+                    <tr key={r.cartridgeId + i} className={r.resistant ? "row-targeted" : ""}>
+                      <td className="mono" style={{ fontSize: 11, whiteSpace: "nowrap" }}>
+                        {new Date(r.ts).toLocaleDateString([], { month: "short", day: "numeric" })}
+                        <span style={{ color: "var(--muted-2)" }}> {new Date(r.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      </td>
+                      <td style={{ fontWeight: r.pathogen ? 600 : 400, color: r.pathogen ? "var(--ink)" : "var(--muted)" }}>{pathogenName(r.pathogen)}</td>
+                      <td className="helper hide-compact">{r.location} · {MATRICES[r.matrix]?.name ?? r.matrix}</td>
+                      <td style={{ textAlign: "right" }}>{r.resistant ? <span className="chip chip-resistant">resistant</span> : r.pathogen ? <span className="chip chip-susceptible">none</span> : <span className="helper">—</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : (
+          <div className="helper">
+            {app.name} is a {appId === "goprep" ? "sample-prep" : "library-prep"} step — it doesn't make a pathogen call, so
+            there are no detections to chart. {inv.used} cartridge(s) used on this device.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="feature panel panel-pad" style={{ padding: "12px 14px" }}>
+      <div className="stat accent" style={{ fontSize: 20 }}>{value}</div>
+      <div className="helper">{label}</div>
     </div>
   );
 }

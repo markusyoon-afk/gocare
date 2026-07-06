@@ -75,7 +75,7 @@ const initial: DeviceState = {
       model: "GoDEVICE One",
       serial: "GDX-1-24A7F309",
       firmware: "3.1.4",
-      label: "Front Desk",
+      label: "Urgent Care",
       location: { lat: 43.0731, lng: -89.4012, label: "Madison, WI" },
     },
     {
@@ -83,7 +83,7 @@ const initial: DeviceState = {
       model: "GoDEVICE One",
       serial: "GDX-1-24B2C817",
       firmware: "3.1.4",
-      label: "Triage Room 2",
+      label: "In Field",
       location: { lat: 43.0759, lng: -89.3841, label: "Madison, WI" },
     },
   ],

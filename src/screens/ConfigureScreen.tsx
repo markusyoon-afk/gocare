@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   APPS,
   MATRICES,
@@ -35,18 +35,16 @@ export function ConfigureScreen() {
   const [sid, setSid] = useState(state.sampleId ?? "");
   const [pref, setPref] = useState(state.patientRef ?? "");
 
-  // GoH₂O is environmental — auto-select the wastewater/environmental panel and a
-  // default source so Start is never gated on a manual pick. (Fixes "Start won't work".)
-  useEffect(() => {
-    if (appId === "goh2o") {
-      if (!state.matrixId) dispatch({ type: "SELECT_MATRIX", matrixId: "wastewater" });
-      if (!state.envSource) dispatch({ type: "SET_ENV_SOURCE", source: "Wastewater" });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appId, state.matrixId, state.envSource]);
-
   const hasSample = sid.trim().length > 0;
-  const canRun = can(state, "run") && hasSample && (isSeq || Boolean(state.matrixId));
+  // GoH₂O requires an explicit environmental source pick before Start (all sources
+  // run on the wastewater panel). Other apps require sample type; GoSEQ is agnostic.
+  const typePicked = isSeq || (appId === "goh2o" ? Boolean(state.envSource) : Boolean(state.matrixId));
+  const canRun = can(state, "run") && hasSample && typePicked;
+
+  function pickSource(src: string) {
+    dispatch({ type: "SET_ENV_SOURCE", source: src });
+    dispatch({ type: "SELECT_MATRIX", matrixId: "wastewater" });
+  }
 
   // Commit the sample to the store so live telemetry + the GoDEVICE Start reflect it.
   function commit(id = sid, p = pref) {
@@ -122,7 +120,7 @@ export function ConfigureScreen() {
           ) : appId === "goh2o" ? (
             <>
               <div>
-                <div className="section-label">2 · Environmental source</div>
+                <div className="section-label">2 · Environmental source <span className="req">required</span></div>
                 <div className="panel panel-pad">
                   <div className="helper" style={{ marginBottom: 8 }}>Where was this sample collected?</div>
                   <div className="source-picker">
@@ -130,7 +128,7 @@ export function ConfigureScreen() {
                       <button
                         key={src}
                         className={"press source-opt" + (state.envSource === src ? " selected" : "")}
-                        onClick={() => dispatch({ type: "SET_ENV_SOURCE", source: src })}
+                        onClick={() => pickSource(src)}
                       >
                         {src}
                       </button>
@@ -138,7 +136,7 @@ export function ConfigureScreen() {
                   </div>
                 </div>
               </div>
-              {matrix && <TargetPanel appId={appId} matrixId={matrix.id} />}
+              {state.envSource && matrix && <TargetPanel appId={appId} matrixId={matrix.id} />}
             </>
           ) : (
             <>
@@ -196,7 +194,7 @@ export function ConfigureScreen() {
               </div>
               <div className="kv">
                 <span className="k">Sample</span>
-                <span className="v">{isSeq ? "Raw / agnostic" : appId === "goh2o" ? state.envSource ?? "Wastewater" : matrix ? matrix.name : "— select —"}</span>
+                <span className="v">{isSeq ? "Raw / agnostic" : appId === "goh2o" ? state.envSource ?? "— select —" : matrix ? matrix.name : "— select —"}</span>
               </div>
               <div className="kv">
                 <span className="k">Typical run time</span>
@@ -217,6 +215,8 @@ export function ConfigureScreen() {
                 ? "Your role cannot start runs."
                 : !hasSample
                 ? "Scan a Sample ID to enable the run."
+                : appId === "goh2o"
+                ? "Select an environmental source to enable the run."
                 : "Select a sample type to enable the run."}
             </div>
           )}
