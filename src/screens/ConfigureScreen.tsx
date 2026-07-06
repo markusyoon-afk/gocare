@@ -36,14 +36,21 @@ export function ConfigureScreen() {
   const hasSample = sid.trim().length > 0;
   const canRun = can(state, "run") && hasSample && (isSeq || Boolean(state.matrixId));
 
+  // Commit the sample to the store so live telemetry + the GoDEVICE Start reflect it.
+  function commit(id = sid, p = pref) {
+    const clean = id.trim();
+    if (clean && clean !== state.sampleId) dispatch({ type: "SET_SAMPLE", sampleId: clean, patientRef: p.trim() || null });
+  }
+
   function scanSample() {
     // One tap = accession the sample (barcode-driven, GeneXpert/Liat convention).
     const id = `ACC-${Math.floor(100000 + Math.random() * 899999)}`;
     setSid(id);
+    commit(id);
   }
 
   function start() {
-    dispatch({ type: "SET_SAMPLE", sampleId: sid.trim(), patientRef: pref.trim() || null });
+    commit();
     dispatch({ type: "START_RUN" });
   }
 
@@ -68,6 +75,7 @@ export function ConfigureScreen() {
                   placeholder="Scan or enter Sample / Accession ID"
                   value={sid}
                   onChange={(e) => setSid(e.target.value)}
+                  onBlur={() => commit()}
                   aria-label="Sample or Accession ID"
                   inputMode="text"
                 />

@@ -10,7 +10,7 @@ import {
   MNGS_EXAMPLE,
 } from "../data/catalog";
 import { useSession, can } from "../store/session";
-import { summarize } from "../lib/format";
+import { summarize, clinicalReadout } from "../lib/format";
 import type { DetectResult } from "../engine/run";
 
 export function ResultsScreen() {
@@ -97,8 +97,20 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
     );
   }
 
+  const readout = clinicalReadout(result);
+
   return (
-    <div className="results-grid">
+    <>
+      {/* Direct, actionable readout — no interpretation required */}
+      <div className={"action-banner tone-" + readout.tone}>
+        <div className="action-result">{readout.result}</div>
+        <div className="action-line">
+          <span className="ra-label">ACTION</span>
+          {readout.action}
+        </div>
+      </div>
+
+      <div className="results-grid">
       <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
         <div className={"verdict " + (positive ? "verdict-positive" : "")}>
           <div className="verdict-icon" style={{ background: positive ? "rgba(53,204,230,0.18)" : "rgba(255,255,255,0.06)" }}>
@@ -255,7 +267,8 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

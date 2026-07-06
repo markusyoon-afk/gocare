@@ -54,6 +54,42 @@ screen marks each as in-app vs. deployment-dependent:
 - *Deployment-layer* (TLS, encryption-at-rest, tamper-evident audit store) is
   labeled as an organizational responsibility, not asserted by the app.
 
+## GoDEVICE touchscreen + live link
+
+The app pairs with a simplified **GoDEVICE touchscreen** surface. Open it in-console
+(GoDEVICE tab) or as a standalone kiosk window (`?device=1`, "Open on GoDEVICE ↗").
+The two are **live-linked** over a broadcast channel (`src/lib/live.ts`, interface-first
+— swap in WebSocket/BLE later): start a run on the console and the device tracks it in
+real time; the device's **Start** button drives the console. The touchscreen shows only
+prioritized info — identity, staged cartridge, the stage tracker, the one-line result,
+and cartridge stock.
+
+## Stage tracker (toll-gate timer)
+
+Every run shows a segmented horizontal bar that fills across the cartridge's real
+clinical stages, with an accelerated clinical clock (elapsed / total):
+
+- **GoPREP** — Prime & wash → Lysis → Bead capture → Wash → Elution (~25 min)
+- **GoDETECT** — Sample prep → GoAMP amplification → Detection → Readout → Report (~18 min)
+- **GoH₂O** — Water collection → Sample prep → GoAMP → Detection → Report (~30 min)
+- **GoSEQ** — Sample prep → Library prep → Load flow cell → Sequencing (NGS) →
+  Bioinformatics (BugSEQ, untargeted/metagenomic) → Results (~2 hr)
+
+## Actionable readout
+
+Results lead with a direct, no-interpretation-needed line, e.g.
+*"Campylobacter detected — resistant · ACTION: Do NOT use azithromycin,
+erythromycin. Use ciprofloxacin or ceftriaxone."* — mirrored on the GoDEVICE screen.
+
+## Device registration & HaaS inventory
+
+- **Settings** — GoDEVICE model/serial/firmware, clinic registration, operator
+  enrollment (credentials or face scan), GoDx Store connection.
+- **Inventory** — Hardware-as-a-Service cartridge stock per line. Each run consumes a
+  cartridge; when a line hits its safety threshold, an **MOQ order of 10** is placed
+  automatically with the GoDx Store. Manual order, auto-reorder toggle, and order
+  receipt included.
+
 ## Responsive — iPad-first
 
 Optimized for iPad (bedside/bench), scaling up and down: full sidebar + multi-column

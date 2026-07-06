@@ -1,0 +1,446 @@
+/* ==========================================================================
+   Stage tracker · run layout · device kiosk · actionable readout · inventory
+   (loaded after styles.css)
+   ========================================================================== */
+
+.run-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.tracker-panel {
+  padding: 28px 30px;
+}
+.run-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.run-instrument {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Stage tracker */
+.tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.tracker-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+.tracker-stage-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tracker-stage-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.tracker-clock {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+}
+.tracker-clock .stat {
+  font-size: 30px;
+}
+.tracker-total {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+.seg-bar {
+  display: flex;
+  gap: 4px;
+  height: 16px;
+}
+.seg {
+  position: relative;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  min-width: 5px;
+}
+.seg-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  border-radius: 5px;
+  transition: width 0.2s linear;
+  box-shadow: 0 0 10px rgba(53, 204, 230, 0.5);
+}
+.seg.active {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(53, 204, 230, 0.45);
+}
+.seg-labels {
+  display: flex;
+  gap: 4px;
+}
+.seg-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+}
+.seg-label .seg-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  flex-shrink: 0;
+}
+.seg-label.done .seg-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #06222b;
+}
+.seg-label.active {
+  color: var(--ink);
+}
+.seg-label.active .seg-dot {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(53, 204, 230, 0.12);
+}
+.seg-text {
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+.tracker-detail {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Actionable readout + tones */
+.action-banner {
+  border-radius: 16px;
+  padding: 18px 24px;
+  margin-bottom: 20px;
+  border: 1px solid var(--line-2);
+}
+.action-result {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.action-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 15px;
+  margin-top: 8px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.ra-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+.tone-positive {
+  background: linear-gradient(160deg, rgba(70, 211, 154, 0.14), rgba(70, 211, 154, 0.03));
+  border-color: rgba(70, 211, 154, 0.4);
+}
+.tone-positive .action-result,
+.tone-positive .kiosk-readout-result {
+  color: var(--green);
+}
+.tone-resistant {
+  background: linear-gradient(160deg, rgba(255, 107, 107, 0.14), rgba(255, 107, 107, 0.03));
+  border-color: rgba(255, 107, 107, 0.42);
+}
+.tone-resistant .action-result,
+.tone-resistant .kiosk-readout-result {
+  color: var(--red);
+}
+.tone-negative {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), transparent);
+}
+.tone-invalid {
+  background: linear-gradient(160deg, rgba(242, 178, 92, 0.14), transparent);
+  border-color: rgba(242, 178, 92, 0.4);
+}
+.tone-invalid .action-result,
+.tone-invalid .kiosk-readout-result {
+  color: var(--amber);
+}
+
+/* GoDEVICE touchscreen kiosk */
+.device-window {
+  height: 100%;
+  overflow: auto;
+}
+.device-kiosk {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 100%;
+}
+.kiosk-full {
+  padding: 26px 32px;
+  min-height: 100vh;
+}
+.kiosk-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.kiosk-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.kiosk-model {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+}
+.kiosk-serial {
+  font-size: 11px;
+  color: var(--muted);
+}
+.kiosk-head-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.kiosk-clinic {
+  font-size: 13px;
+  color: var(--muted);
+}
+.kiosk-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.kiosk-run {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.kiosk-run-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.kiosk-lot {
+  font-size: 12px;
+  color: var(--muted);
+}
+.kiosk-note {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.kiosk-idle,
+.kiosk-staged {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 40px 20px;
+}
+.kiosk-cartridge-glyph {
+  font-size: 54px;
+  color: var(--accent);
+  line-height: 1;
+}
+.kiosk-start {
+  font-size: 20px;
+  padding: 18px 56px;
+  margin-top: 6px;
+}
+.kiosk-inv {
+  display: flex;
+  gap: 10px;
+}
+.kiosk-inv-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+}
+.kiosk-inv-item.low {
+  border-color: rgba(242, 178, 92, 0.4);
+  background: rgba(242, 178, 92, 0.06);
+}
+.kiosk-inv-name {
+  font-size: 11px;
+  color: var(--muted);
+}
+.kiosk-inv-stock {
+  font-size: 22px;
+}
+.kiosk-readout {
+  text-align: center;
+  padding: 44px 30px;
+  border-radius: 20px;
+  border: 1px solid var(--line-2);
+}
+.kiosk-readout-tag {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.kiosk-readout-result {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 600;
+  margin: 14px 0 18px;
+  line-height: 1.1;
+}
+.kiosk-readout-action {
+  font-size: 20px;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Inventory (HaaS) */
+.inv-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.inv-low {
+  border-color: rgba(242, 178, 92, 0.35);
+}
+.inv-bar {
+  position: relative;
+  height: 12px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.inv-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.3s;
+}
+.inv-threshold {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--red);
+  opacity: 0.6;
+}
+.inv-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.inv-stats b {
+  color: var(--ink);
+}
+.inv-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.toggle input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+.inv-order-btn {
+  padding: 9px 16px;
+  font-size: 12.5px;
+}
+.field-sans {
+  font-family: var(--font-body);
+}
+.open-device-btn {
+  padding: 9px 14px;
+  font-size: 12px;
+}
+
+/* Phone tweaks for the new components */
+@media (max-width: 720px) {
+  .tracker-panel {
+    padding: 18px 16px;
+  }
+  .tracker-stage-name {
+    font-size: 18px;
+  }
+  .tracker-clock .stat {
+    font-size: 24px;
+  }
+  .seg-labels {
+    display: none;
+  }
+  .action-result {
+    font-size: 20px;
+  }
+  .action-line {
+    font-size: 14px;
+  }
+  .kiosk-readout-result {
+    font-size: 28px;
+  }
+  .kiosk-readout-action {
+    font-size: 17px;
+  }
+  .kiosk-full {
+    padding: 16px;
+  }
+  .kiosk-inv {
+    flex-wrap: wrap;
+  }
+  .kiosk-inv-item {
+    min-width: calc(50% - 5px);
+  }
+}

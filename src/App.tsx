@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SessionProvider, useSession } from "./store/session";
+import { DeviceProvider, useDevice, inventorySummary } from "./store/device";
 import { APPS, APP_ORDER, type AppId } from "./data/catalog";
 import { SOFTWARE } from "./data/compliance";
+import { clinicalReadout } from "./lib/format";
+import { publish, subscribe, isDeviceWindow } from "./lib/live";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ConfigureScreen } from "./screens/ConfigureScreen";
 import { RunScreen } from "./screens/RunScreen";
@@ -12,22 +15,95 @@ import { AuditScreen } from "./screens/AuditScreen";
 import { ComplianceScreen } from "./screens/ComplianceScreen";
 import { LoginScreen } from "./screens/LoginScreen";
 import { LockScreen } from "./screens/LockScreen";
+import { DeviceScreen } from "./screens/DeviceScreen";
+import { SettingsScreen } from "./screens/SettingsScreen";
+import { InventoryScreen } from "./screens/InventoryScreen";
 
-type View = "workflow" | "menu" | "amr" | "audit" | "compliance";
+type View = "workflow" | "device" | "inventory" | "menu" | "amr" | "audit" | "compliance" | "settings";
 
 const NAV: { key: View; label: string; glyph: string }[] = [
   { key: "workflow", label: "Dashboard", glyph: "▦" },
+  { key: "device", label: "GoDEVICE", glyph: "▣" },
+  { key: "inventory", label: "Inventory", glyph: "▤" },
   { key: "menu", label: "Test Menu", glyph: "☰" },
   { key: "amr", label: "AMR Library", glyph: "⚕" },
   { key: "audit", label: "Audit", glyph: "◈" },
   { key: "compliance", label: "Compliance", glyph: "⛨" },
+  { key: "settings", label: "Settings", glyph: "⚙" },
 ];
+// Prioritized subset for the phone tab bar (keep it uncluttered).
+const PHONE_TABS: View[] = ["workflow", "device", "inventory", "menu", "audit"];
+
+/** Bridges the console to the live link: telemetry out, commands in, cartridge use. */
+function LiveBridge() {
+  const { state, dispatch } = useSession();
+  const { state: dev, dispatch: devDispatch } = useDevice();
+
+  const sessionRef = useRef(state);
+  sessionRef.current = state;
+
+  // Consume one cartridge when a run starts (drives HaaS auto-reorder).
+  const lastLot = useRef<string | null>(null);
+  useEffect(() => {
+    if (state.stage === "running" && state.lot && state.appId && lastLot.current !== state.lot) {
+      lastLot.current = state.lot;
+      devDispatch({ type: "CONSUME", appId: state.appId });
+    }
+  }, [state.stage, state.lot, state.appId, devDispatch]);
+
+  // Broadcast telemetry (and the finished result) so the GoDEVICE screen mirrors live.
+  useEffect(() => {
+    const send = () => {
+      const staged =
+        state.stage === "configure" && state.appId
+          ? { appId: state.appId, lot: state.lot!, sampleId: state.sampleId }
+          : null;
+      publish({
+        type: "telemetry",
+        device: dev.device,
+        clinic: dev.clinic.name,
+        staged,
+        inventory: inventorySummary(dev).map((i) => ({ appId: i.appId, stock: i.stock, low: i.low })),
+      });
+      if (state.stage === "results" && (state.appId === "godetect" || state.appId === "goh2o") && state.result) {
+        publish({
+          type: "run",
+          appId: state.appId,
+          lot: state.lot ?? "",
+          sampleId: state.sampleId,
+          progress: 1,
+          done: true,
+          readout: clinicalReadout(state.result),
+        });
+      }
+    };
+    send();
+    const t = setInterval(send, 1500);
+    return () => clearInterval(t);
+  }, [state.stage, state.appId, state.lot, state.sampleId, state.result, dev]);
+
+  // Honor commands from the GoDEVICE touchscreen (e.g. Start pressed on the instrument).
+  useEffect(
+    () =>
+      subscribe((e) => {
+        if (e.type !== "cmd") return;
+        const s = sessionRef.current;
+        if (e.action === "start") {
+          if (s.stage === "configure" && s.sampleId && (s.matrixId || s.appId === "goseq")) dispatch({ type: "START_RUN" });
+        } else if (e.action === "home") {
+          dispatch({ type: "GO_HOME" });
+        }
+      }),
+    [dispatch],
+  );
+
+  return null;
+}
 
 function Workspace() {
   const { state, dispatch } = useSession();
   const [view, setView] = useState<View>("workflow");
 
-  // Throttled activity signal so the inactivity timer only fires when truly idle.
   useEffect(() => {
     let last = 0;
     const onAct = () => {
@@ -42,7 +118,6 @@ function Workspace() {
     return () => evts.forEach((e) => window.removeEventListener(e, onAct));
   }, [dispatch]);
 
-  // Auto-lock after inactivity (AC-11).
   useEffect(() => {
     const t = setInterval(() => {
       if (Date.now() - state.lastActivity >= SOFTWARE.sessionLockMs) dispatch({ type: "LOCK" });
@@ -59,9 +134,11 @@ function Workspace() {
     setView("workflow");
     if (state.stage !== "home") dispatch({ type: "GO_HOME" });
   }
+  function nav(v: View) {
+    v === "workflow" ? goDashboard() : setView(v);
+  }
 
   const stageLabel: Record<string, string> = { home: "Dashboard", configure: "Configure", running: "Running", results: "Results" };
-
   const crumbTrail =
     view === "workflow"
       ? state.appId && state.stage !== "home"
@@ -71,7 +148,7 @@ function Workspace() {
 
   return (
     <div className="app-bg">
-      {/* Persistent data-classification bar (CMMC marking) */}
+      <LiveBridge />
       <div className="classification-bar">
         <span>{SOFTWARE.classification}</span>
         <span className="cb-mid hide-compact">GoDx GoCARE · SaMD</span>
@@ -79,7 +156,6 @@ function Workspace() {
       </div>
 
       <div className="shell">
-        {/* Sidebar (tablet / desktop) */}
         <aside className="sidebar">
           <div className="brand">
             <div className="brand-mark">Go</div>
@@ -92,11 +168,7 @@ function Workspace() {
           <div className="nav-label">Workspace</div>
           <nav className="nav">
             {NAV.map((n) => (
-              <button
-                key={n.key}
-                className={"nav-item" + (view === n.key ? " active" : "")}
-                onClick={() => (n.key === "workflow" ? goDashboard() : setView(n.key))}
-              >
+              <button key={n.key} className={"nav-item" + (view === n.key ? " active" : "")} onClick={() => nav(n.key)}>
                 <span className="nav-dot" /> {n.label}
               </button>
             ))}
@@ -127,7 +199,6 @@ function Workspace() {
           </div>
         </aside>
 
-        {/* Main */}
         <main className="main">
           <header className="topbar">
             <div className="crumbs">
@@ -155,7 +226,13 @@ function Workspace() {
           </header>
 
           <div className="scroll">
-            {view === "menu" ? (
+            {view === "device" ? (
+              <DeviceScreen />
+            ) : view === "inventory" ? (
+              <InventoryScreen />
+            ) : view === "settings" ? (
+              <SettingsScreen />
+            ) : view === "menu" ? (
               <MenuScreen />
             ) : view === "amr" ? (
               <AmrScreen />
@@ -174,14 +251,9 @@ function Workspace() {
             )}
           </div>
 
-          {/* Bottom tab bar (phone) */}
           <nav className="tabbar">
-            {NAV.map((n) => (
-              <button
-                key={n.key}
-                className={"tab" + (view === n.key ? " active" : "")}
-                onClick={() => (n.key === "workflow" ? goDashboard() : setView(n.key))}
-              >
+            {NAV.filter((n) => PHONE_TABS.includes(n.key)).map((n) => (
+              <button key={n.key} className={"tab" + (view === n.key ? " active" : "")} onClick={() => nav(n.key)}>
                 <span className="tab-glyph">{n.glyph}</span>
                 <span className="tab-label">{n.label}</span>
               </button>
@@ -200,10 +272,20 @@ function Gate() {
   return <Workspace />;
 }
 
-export default function App() {
+/** Standalone GoDEVICE touchscreen window (?device=1) — no console chrome. */
+function DeviceWindow() {
   return (
-    <SessionProvider>
-      <Gate />
-    </SessionProvider>
+    <div className="app-bg device-window">
+      <DeviceScreen kiosk />
+    </div>
+  );
+}
+
+export default function App() {
+  const device = isDeviceWindow();
+  return (
+    <DeviceProvider>
+      <SessionProvider>{device ? <DeviceWindow /> : <Gate />}</SessionProvider>
+    </DeviceProvider>
   );
 }

@@ -1,6 +1,62 @@
 import { MATRICES, PATHOGENS } from "../data/catalog";
 import type { DetectResult } from "../engine/run";
 
+/** Format seconds as m:ss, or h:mm:ss past an hour. */
+export function fmtClock(sec: number): string {
+  const s = Math.max(0, Math.round(sec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(ss)}` : `${m}:${pad(ss)}`;
+}
+
+export type ReadoutTone = "positive" | "resistant" | "negative" | "invalid";
+
+export interface ClinicalReadout {
+  tone: ReadoutTone;
+  /** One-line result, no jargon. */
+  result: string;
+  /** The single next action, phrased directly — no interpretation needed. */
+  action: string;
+}
+
+/**
+ * Turn a detection result into a direct, actionable readout for the clinician —
+ * the "what do I do now" line, so the screen doesn't require interpretation.
+ */
+export function clinicalReadout(result: DetectResult): ClinicalReadout {
+  if (!result.controlValid) {
+    return {
+      tone: "invalid",
+      result: "Invalid run — internal control failed",
+      action: "Do not report. Repeat the test with a new cartridge.",
+    };
+  }
+  if (!result.positivePathogen) {
+    return {
+      tone: "negative",
+      result: "No target pathogen detected",
+      action: "Negative for the panel. Pursue alternative workup if symptoms persist.",
+    };
+  }
+  const name = PATHOGENS[result.positivePathogen].name;
+  const { avoid, consider } = result.interpretation;
+  if (avoid.length > 0) {
+    const considerTxt = consider.length ? ` Use ${consider.join(" or ")}.` : "";
+    return {
+      tone: "resistant",
+      result: `${name} detected — resistant`,
+      action: `Do NOT use ${avoid.join(", ")} (resistance detected).${considerTxt}`,
+    };
+  }
+  return {
+    tone: "positive",
+    result: `${name} detected — susceptible`,
+    action: "No resistance detected. First-line therapy is appropriate.",
+  };
+}
+
 /** One-line human summary of a completed run — used in the audit log and history. */
 export function summarize(appId: string, result: DetectResult | null, matrixId: string | null): string {
   if (appId === "goprep") return `Purified NA · ${matrixId ? MATRICES[matrixId].name : "sample"}`;
