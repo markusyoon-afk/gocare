@@ -268,6 +268,17 @@
   filter: drop-shadow(0 6px 16px rgba(53, 204, 230, 0.35));
 }
 
+/* Header logo — shown on narrow layouts where the sidebar (and its logo) is hidden */
+.topbar-logo {
+  display: none;
+  margin-right: 10px;
+}
+@media (max-width: 720px) {
+  .topbar-logo {
+    display: block;
+  }
+}
+
 /* Login: operator select + sign-in button */
 .op-select {
   display: flex;

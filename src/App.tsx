@@ -206,6 +206,7 @@ function Workspace() {
 
         <main className="main">
           <header className="topbar">
+            <Logo className="logo-mark topbar-logo" size={26} />
             <div className="crumbs">
               <span>GoCARE</span>
               {crumbTrail.map((c, i) => (
