@@ -16,6 +16,7 @@ import { AuditScreen } from "./screens/AuditScreen";
 import { ComplianceScreen } from "./screens/ComplianceScreen";
 import { LoginScreen } from "./screens/LoginScreen";
 import { LockScreen } from "./screens/LockScreen";
+import { AccessGate, isUnlocked } from "./screens/AccessGate";
 import { DeviceScreen } from "./screens/DeviceScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { InventoryScreen } from "./screens/InventoryScreen";
@@ -274,6 +275,8 @@ function DeviceWindow() {
 
 export default function App() {
   const device = isDeviceWindow();
+  const [unlocked, setUnlocked] = useState(isUnlocked());
+  if (!unlocked) return <AccessGate onUnlock={() => setUnlocked(true)} />;
   return (
     <DeviceProvider>
       <SessionProvider>{device ? <DeviceWindow /> : <Gate />}</SessionProvider>
