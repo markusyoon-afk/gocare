@@ -44,10 +44,34 @@ src/styles.css          GoDx MedTech design system
 
 ```bash
 npm install
-npm run dev        # http://localhost:5177
+npm run dev        # http://localhost:5177  (dev, no service worker)
 npm test           # engine regression + validation
 npm run typecheck
-npm run build      # static bundle in dist/ (relative base — kiosk/Pages ready)
+npm run build      # icons + static PWA bundle in dist/ (relative base)
+npm run preview    # serve the built app — installable & offline-capable
 ```
+
+## Install as an app (PWA)
+
+`npm run build` produces an installable Progressive Web App in `dist/`:
+
+- **Manifest** (`manifest.webmanifest`) + generated icons → installs to home
+  screen / desktop as **GoCARE**, standalone, GoDx navy chrome.
+- **Service worker** (`sw.js`) caches the app shell for **offline** use. The
+  offline fallback is *navigate-only* (playbook pitfall #1) — it never serves
+  `index.html` for a failed asset request, so an installed build can't brick.
+- **Relative base** (`base: "./"`) → runs from any subpath: a GoDEVICE kiosk,
+  a static host, or GitHub Pages.
+
+Install locally: `npm run preview`, open the URL, use the browser's **Install**
+action (or Add to Home Screen on iOS).
+
+## Ship it (public URL)
+
+The build is host-agnostic — drop `dist/` on any static host. For GitHub Pages,
+push `dist/` to a `gh-pages` branch (`.nojekyll` is already included).
+**Note:** the UI carries *GoDx Confidential* material and unpublished
+validation/financial figures — deploy only to a private/authenticated host, not
+a public URL, unless that content is cleared for release.
 
 *For demonstration. Not a medical device; results are simulated.*
