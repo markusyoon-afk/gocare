@@ -6,6 +6,7 @@ import { SOFTWARE } from "./data/compliance";
 import { clinicalReadout, deviceStatus } from "./lib/format";
 import { publish, subscribe, isDeviceWindow } from "./lib/live";
 import { DeviceStatusBar } from "./components/DeviceStatusBar";
+import { Logo } from "./components/Logo";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ConfigureScreen } from "./screens/ConfigureScreen";
 import { RunScreen } from "./screens/RunScreen";
@@ -166,7 +167,7 @@ function Workspace() {
       <div className="shell">
         <aside className="sidebar">
           <div className="brand">
-            <div className="brand-mark">Go</div>
+            <Logo className="logo-mark" size={38} />
             <div>
               <div className="brand-name">GoCARE</div>
               <div className="brand-sub">GoDx · SaMD</div>

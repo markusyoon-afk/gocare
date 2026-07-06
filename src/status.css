@@ -260,3 +260,10 @@
   text-transform: uppercase;
   color: var(--muted-2);
 }
+
+/* GoCARE logomark */
+.logo-mark {
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 16px rgba(53, 204, 230, 0.35));
+}

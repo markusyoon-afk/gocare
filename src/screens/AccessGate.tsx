@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { hashSeed } from "../engine/run";
+import { Logo } from "../components/Logo";
 
 /**
  * Shared access-code gate for the public demo link.
@@ -42,7 +43,7 @@ export function AccessGate({ onUnlock }: { onUnlock: () => void }) {
     <div className="auth-screen app-bg">
       <form className="auth-card lock-card fade-in" onSubmit={submit}>
         <div className="brand" style={{ justifyContent: "center", marginBottom: 10 }}>
-          <div className="brand-mark">Go</div>
+          <Logo className="logo-mark" size={44} />
           <div style={{ textAlign: "left" }}>
             <div className="brand-name" style={{ fontSize: 20 }}>GoCARE</div>
             <div className="brand-sub">GoDx · Molecular Intelligence</div>

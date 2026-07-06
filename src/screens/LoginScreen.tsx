@@ -1,5 +1,6 @@
 import { OPERATORS, SOFTWARE } from "../data/compliance";
 import { useSession } from "../store/session";
+import { Logo } from "../components/Logo";
 
 /** Access-control gate — an operator must badge in before any run (HIPAA/CMMC). */
 export function LoginScreen() {
@@ -8,7 +9,7 @@ export function LoginScreen() {
     <div className="auth-screen app-bg">
       <div className="auth-card fade-in">
         <div className="brand" style={{ marginBottom: 6 }}>
-          <div className="brand-mark">Go</div>
+          <Logo className="logo-mark" size={44} />
           <div>
             <div className="brand-name" style={{ fontSize: 22 }}>GoCARE</div>
             <div className="brand-sub">GoDx · Molecular Intelligence</div>
