@@ -18,7 +18,7 @@ export function ComplianceScreen() {
 
       <div className="grid grid-4 posture-strip">
         <Posture label="Access control" value="Enforced" />
-        <Posture label="Session auto-lock" value={`${SOFTWARE.sessionLockMs / 1000}s`} />
+        <Posture label="Auto sign-out" value={`${Math.round(SOFTWARE.sessionLockMs / 60000)} min`} />
         <Posture label="Audit logging" value="On" />
         <Posture label="PHI at rest" value="None" />
       </div>

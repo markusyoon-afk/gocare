@@ -127,10 +127,12 @@ function Workspace() {
     return () => evts.forEach((e) => window.removeEventListener(e, onAct));
   }, [dispatch]);
 
+  // Full sign-out after inactivity (auto-logoff); the topbar Lock button handles
+  // quick step-aways separately.
   useEffect(() => {
     const t = setInterval(() => {
-      if (Date.now() - state.lastActivity >= SOFTWARE.sessionLockMs) dispatch({ type: "LOCK" });
-    }, 1000);
+      if (Date.now() - state.lastActivity >= SOFTWARE.sessionLockMs) dispatch({ type: "SIGN_OUT_OPERATOR" });
+    }, 5000);
     return () => clearInterval(t);
   }, [state.lastActivity, dispatch]);
 

@@ -20,7 +20,7 @@ export const SOFTWARE = {
   udiDi: "GODX-GOCARE-0003", // placeholder device identifier
   classification: "CONFIDENTIAL // CUI",
   intendedUse: "Investigational Use Only — not for diagnostic procedures",
-  sessionLockMs: 120000, // AC-11 / HIPAA auto-logoff (2 min; production configurable)
+  sessionLockMs: 1800000, // AC-11 / HIPAA auto-logoff (30 min; production configurable)
 };
 
 export type Role = "Lab Technician" | "Clinician" | "Administrator";
@@ -62,8 +62,8 @@ export const CONTROLS: ControlItem[] = [
   },
   {
     id: "session",
-    title: "Automatic session lock",
-    detail: "Inactivity locks the session after 2 minutes; re-authentication required to resume. No unattended access.",
+    title: "Automatic sign-out",
+    detail: "Inactivity signs the operator out after 30 minutes; identity must be re-entered. A manual Lock button covers quick step-aways. No unattended access.",
     frameworks: ["HIPAA §164.312(a)(2)(iii)", "CMMC AC.L2-3.1.10", "NIST 800-171 3.1.10"],
     layer: "app",
   },

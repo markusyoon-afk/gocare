@@ -26,7 +26,7 @@ export function LockScreen() {
         </button>
         <div className="auth-foot">
           <span className="chip">{SOFTWARE.classification}</span>
-          <span className="helper">Auto-lock · {SOFTWARE.sessionLockMs / 1000}s inactivity</span>
+          <span className="helper">Re-authenticate to resume · auto sign-out after {Math.round(SOFTWARE.sessionLockMs / 60000)} min idle</span>
         </div>
       </div>
     </div>
