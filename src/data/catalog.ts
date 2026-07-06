@@ -238,6 +238,17 @@ export const ROADMAP_MATRICES = ["Blood", "Saliva", "Expanded environmental"];
 /** GoH₂O environmental sources (all run on the wastewater/environmental panel). */
 export const ENV_SOURCES = ["Wastewater", "Lake", "Stream"];
 
+/** Preset sample IDs for quick demo runs (fills the Sample ID field). */
+export const DEMO_SAMPLES = [
+  { id: "ACC-100482", note: "Stool · GI symptoms" },
+  { id: "ACC-100517", note: "Urine · UTI workup" },
+  { id: "ACC-100633", note: "Nasal · respiratory" },
+  { id: "ACC-100704", note: "Stool · pediatric" },
+  { id: "ACC-100812", note: "Stool · outbreak trace" },
+  { id: "WW-24-0891", note: "Wastewater · surveillance" },
+  { id: "ENV-24-0347", note: "Stream · field sample" },
+];
+
 /* ------------------------------------------------------------------ */
 /* AMR SNP assays (the candidate SNP-detection panel)                  */
 /* ------------------------------------------------------------------ */

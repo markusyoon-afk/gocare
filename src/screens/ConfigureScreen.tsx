@@ -5,6 +5,7 @@ import {
   MATRIX_ORDER,
   ROADMAP_MATRICES,
   ENV_SOURCES,
+  DEMO_SAMPLES,
   PATHOGENS,
   SNP_ASSAYS,
   GOSEQ_KIT,
@@ -79,10 +80,28 @@ export function ConfigureScreen() {
           <div>
             <div className="section-label">1 · Sample ID <span className="req">required</span></div>
             <div className="panel panel-pad">
-              <div className="accession-row">
+              <select
+                className="field field-sans sample-preset"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSid(e.target.value);
+                    commit(e.target.value);
+                  }
+                }}
+                aria-label="Preset sample ID"
+              >
+                <option value="">▾ Pick a preset sample ID…</option>
+                {DEMO_SAMPLES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.id} — {s.note}
+                  </option>
+                ))}
+              </select>
+              <div className="accession-row" style={{ marginTop: 10 }}>
                 <input
                   className="field"
-                  placeholder="Scan or enter Sample / Accession ID"
+                  placeholder="…or scan / enter Sample ID"
                   value={sid}
                   onChange={(e) => setSid(e.target.value)}
                   onBlur={() => commit()}
