@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   APPS,
   MATRICES,
@@ -59,6 +59,17 @@ export function ConfigureScreen() {
     setSid(id);
     commit(id);
   }
+
+  // Auto-populate a Sample ID on load so a run can start right away; the operator
+  // can still override it via the preset dropdown, Scan, or manual entry.
+  useEffect(() => {
+    if (!state.sampleId && !sid.trim()) {
+      const id = `ACC-${Math.floor(100000 + Math.random() * 899999)}`;
+      setSid(id);
+      dispatch({ type: "SET_SAMPLE", sampleId: id, patientRef: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function start() {
     commit();
