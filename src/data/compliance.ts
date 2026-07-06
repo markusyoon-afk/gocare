@@ -35,10 +35,11 @@ export interface Operator {
 }
 
 export const OPERATORS: Operator[] = [
-  { id: "op-mt", name: "M. Torres, MLS", initials: "MT", role: "Lab Technician", scopes: ["run", "sign_out"] },
   { id: "op-ck", name: "Dr. C. Kim", initials: "CK", role: "Clinician", scopes: ["run", "sign_out"] },
-  { id: "op-jr", name: "J. Rivera", initials: "JR", role: "Lab Technician", scopes: ["run"] },
-  { id: "op-admin", name: "System Admin", initials: "SA", role: "Administrator", scopes: ["run", "sign_out", "admin"] },
+  { id: "op-ls", name: "Dr. L. Shin", initials: "LS", role: "Clinician", scopes: ["run", "sign_out"] },
+  { id: "op-ma", name: "Dr. M. Alipanah", initials: "MA", role: "Clinician", scopes: ["run", "sign_out"] },
+  { id: "op-sk", name: "Dr. S. Kim", initials: "SK", role: "Clinician", scopes: ["run", "sign_out"] },
+  { id: "op-my", name: "M. Yoon", initials: "MY", role: "Administrator", scopes: ["run", "sign_out", "admin"] },
 ];
 
 export interface ControlItem {
