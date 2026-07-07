@@ -36,13 +36,15 @@ export interface Operator {
   pinHash: number;
 }
 
-// Demo PINs — CK 1234 · LS 2345 · MA 3456 · SK 4567 · MY 5678
+// DEMO ONLY — every operator uses PIN 4639 so the team can sign in easily.
+// (Not for real login; production issues unique per-operator PINs.)
+const DEMO_PIN = 704791799; // hashSeed("4639")
 export const OPERATORS: Operator[] = [
-  { id: "op-ck", name: "Dr. C. Kim", initials: "CK", role: "Clinician", scopes: ["run", "sign_out"], pinHash: 4257489661 },
-  { id: "op-ls", name: "Dr. L. Shin", initials: "LS", role: "Clinician", scopes: ["run", "sign_out"], pinHash: 784195493 },
-  { id: "op-ma", name: "Dr. M. Alipanah", initials: "MA", role: "Clinician", scopes: ["run", "sign_out"], pinHash: 1466818649 },
-  { id: "op-sk", name: "Dr. S. Kim", initials: "SK", role: "Clinician", scopes: ["run", "sign_out"], pinHash: 2622927441 },
-  { id: "op-my", name: "M. Yoon", initials: "MY", role: "Administrator", scopes: ["run", "sign_out", "admin"], pinHash: 3305550597 },
+  { id: "op-ck", name: "Dr. C. Kim", initials: "CK", role: "Clinician", scopes: ["run", "sign_out"], pinHash: DEMO_PIN },
+  { id: "op-ls", name: "Dr. L. Shin", initials: "LS", role: "Clinician", scopes: ["run", "sign_out"], pinHash: DEMO_PIN },
+  { id: "op-ma", name: "Dr. M. Alipanah", initials: "MA", role: "Clinician", scopes: ["run", "sign_out"], pinHash: DEMO_PIN },
+  { id: "op-sk", name: "Dr. S. Kim", initials: "SK", role: "Clinician", scopes: ["run", "sign_out"], pinHash: DEMO_PIN },
+  { id: "op-my", name: "M. Yoon", initials: "MY", role: "Administrator", scopes: ["run", "sign_out", "admin"], pinHash: DEMO_PIN },
 ];
 
 export interface ControlItem {
