@@ -1,8 +1,15 @@
+import { useState } from "react";
 import { useSession } from "../store/session";
 import { unifiedHistory, dailySeries, byPathogen, trend, pathogenName } from "../lib/history";
 import { useNndss, nndssTotals } from "../lib/nndss";
 
 const DAYS = 28;
+const RANGES = [
+  { label: "12 wk", weeks: 12 },
+  { label: "26 wk", weeks: 26 },
+  { label: "52 wk", weeks: 52 },
+  { label: "2 yr", weeks: 104 },
+];
 
 /** Analytics — result trends over time for proactive surveillance. */
 export function AnalyticsScreen() {
@@ -10,6 +17,15 @@ export function AnalyticsScreen() {
   const rows = unifiedHistory(state.history);
   const { data: nndss, live } = useNndss();
   const nat = nndssTotals(nndss);
+  const [rangeWeeks, setRangeWeeks] = useState(104);
+  const rangeLabel = RANGES.find((r) => r.weeks === rangeWeeks)?.label ?? "";
+  // Window each pathogen's series to the selected duration.
+  const natWindowed = nat.map((row) => {
+    const pts = row.points.slice(-rangeWeeks);
+    return { ...row, pts, latest: pts.length ? pts[pts.length - 1].cases : 0, total: pts.reduce((s, p) => s + p.cases, 0) };
+  });
+  const span = natWindowed[0]?.pts ?? [];
+  const spanLabel = span.length ? `W${span[0].week} ${span[0].year} – W${span[span.length - 1].week} ${span[span.length - 1].year}` : "";
 
   const totalPos = rows.filter((r) => r.pathogen).length;
   const resistant = rows.filter((r) => r.resistant).length;
@@ -78,22 +94,38 @@ export function AnalyticsScreen() {
       {/* Real national surveillance benchmark — CDC NNDSS */}
       <div className="section-label" style={{ marginTop: 24 }}>National surveillance benchmark · CDC NNDSS</div>
       <div className="panel panel-pad">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
           <div className="helper">
-            Real U.S. weekly confirmed cases · {nndss.years[0]}–{nndss.latestYear} · {nndss.region} — compare your device
-            detections against the national trend.
+            Real U.S. weekly confirmed cases · {nndss.region} — compare your device detections against the national trend.
           </div>
           <span className={"chip " + (live ? "chip-susceptible" : "")}>
             {live ? "● LIVE · data.cdc.gov" : "◍ snapshot"}
           </span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {nat.map((row) => (
+
+        {/* Timeline duration navigation */}
+        <div className="range-bar">
+          <div className="range-toggle">
+            {RANGES.map((r) => (
+              <button
+                key={r.weeks}
+                className={"press range-opt" + (rangeWeeks === r.weeks ? " selected" : "")}
+                onClick={() => setRangeWeeks(r.weeks)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <span className="mono range-span">{spanLabel}</span>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
+          {natWindowed.map((row) => (
             <div key={row.id} className="nat-row">
               <div className="nat-name">{pathogenName(row.id)}</div>
-              <div className="nat-spark"><Sparkline values={row.points.map((p) => p.cases)} /></div>
+              <div className="nat-spark"><Sparkline values={row.pts.map((p) => p.cases)} /></div>
               <div className="nat-metric"><span className="stat accent" style={{ fontSize: 18 }}>{row.latest.toLocaleString()}</span><span className="helper">latest wk</span></div>
-              <div className="nat-metric hide-compact"><span className="stat" style={{ fontSize: 18 }}>{row.total.toLocaleString()}</span><span className="helper">104-wk total</span></div>
+              <div className="nat-metric hide-compact"><span className="stat" style={{ fontSize: 18 }}>{row.total.toLocaleString()}</span><span className="helper">{rangeLabel} total</span></div>
             </div>
           ))}
         </div>

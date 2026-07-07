@@ -371,6 +371,44 @@
   background: #0b1218;
 }
 
+/* Timeline duration toggle (CDC benchmark) */
+.range-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.range-toggle {
+  display: inline-flex;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 3px;
+}
+.range-opt {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  background: none;
+  box-shadow: none;
+  color: var(--muted);
+}
+.range-opt.selected {
+  background: var(--accent);
+  color: #06222b;
+  box-shadow: none;
+  transform: none;
+}
+.range-span {
+  font-size: 11px;
+  color: var(--muted-2);
+  white-space: nowrap;
+}
+
 /* National surveillance (CDC NNDSS) rows */
 .nat-row {
   display: grid;
