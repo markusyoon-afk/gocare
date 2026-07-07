@@ -77,7 +77,7 @@ export const CONTROLS: ControlItem[] = [
   {
     id: "minimum",
     title: "Minimum necessary PHI",
-    detail: "Only a Sample/Accession ID is required. Patient identifiers are optional, flagged, and never leave the device.",
+    detail: "Only a Sample ID is required. Patient identifiers are optional, flagged, and never leave the device.",
     frameworks: ["HIPAA §164.502(b)", "HIPAA §164.514"],
     layer: "app",
   },

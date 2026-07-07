@@ -170,7 +170,7 @@ function reducer(state: SessionState, action: Action): SessionState {
         sampleId: action.sampleId,
         patientRef: action.patientRef,
         lastActivity: Date.now(),
-        audit: log(state, "Sample accessioned", `ID ${action.sampleId}${action.patientRef ? " · patient ref set" : ""}`),
+        audit: log(state, "Sample added", `ID ${action.sampleId}${action.patientRef ? " · patient ref set" : ""}`),
       };
     case "START_RUN":
       return {

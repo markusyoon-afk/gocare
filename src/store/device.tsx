@@ -111,6 +111,7 @@ type Action =
   | { type: "REORDER"; appId: AppId; auto: boolean }
   | { type: "RECEIVE"; id: string }
   | { type: "TOGGLE_AUTO"; appId: AppId }
+  | { type: "SET_THRESHOLD"; appId: AppId; threshold: number }
   | { type: "SET_CLINIC"; clinic: Partial<Clinic> }
   | { type: "SELECT_DEVICE"; id: string }
   | { type: "REGISTER_DEVICE"; unit: GoDeviceUnit }
@@ -167,6 +168,11 @@ function reducer(state: DeviceState, action: Action): DeviceState {
     case "TOGGLE_AUTO": {
       const inv = state.inventory[action.appId];
       return { ...state, inventory: { ...state.inventory, [action.appId]: { ...inv, autoReorder: !inv.autoReorder } } };
+    }
+    case "SET_THRESHOLD": {
+      const inv = state.inventory[action.appId];
+      const threshold = Math.max(0, Math.round(action.threshold));
+      return { ...state, inventory: { ...state.inventory, [action.appId]: { ...inv, threshold } } };
     }
     case "SET_CLINIC":
       return { ...state, clinic: { ...state.clinic, ...action.clinic } };

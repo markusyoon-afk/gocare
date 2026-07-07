@@ -6,7 +6,7 @@ export function InstructionsScreen() {
   const steps = [
     { t: "Sign in", d: "Badge in (or face scan). Confirm the correct GoDEVICE is selected in the status bar." },
     { t: "Insert the cartridge", d: "Scan the cartridge QR or drop it into the bay. GoCARE loads the right test automatically. Light turns from green to amber when a cartridge is in." },
-    { t: "Scan the Sample ID", d: "Tap Scan to capture the Sample / Accession ID. Add a patient reference only if needed." },
+    { t: "Add the Sample ID", d: "Pick a preset, tap Scan, or type the Sample ID. Add a patient reference only if needed." },
     { t: "Collect & load the sample", d: "Dip the cap swab into the sample and seat it in the cartridge (GoH₂O fills from the water collector automatically)." },
     { t: "Press Start", d: "Close the lid and press Start on the app or the GoDEVICE screen. The light pulses yellow while it runs — walk away." },
     { t: "Read the result", d: "When the light turns red the run is done. The result shows one clear line with the action to take." },

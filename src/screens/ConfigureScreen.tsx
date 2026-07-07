@@ -80,7 +80,7 @@ export function ConfigureScreen() {
     <div className="fade-in">
       <div className="page-head">
         <div className="eyebrow">{app.tm} · Cartridge loaded</div>
-        <h1 className="page-title">{isSeq ? "Accession &amp; set up library prep" : "Accession the sample"}</h1>
+        <h1 className="page-title">{isSeq ? "Add the sample &amp; set up" : "Add the sample"}</h1>
         <p className="page-sub hide-compact">{app.description}</p>
       </div>
 
@@ -116,7 +116,7 @@ export function ConfigureScreen() {
                   value={sid}
                   onChange={(e) => setSid(e.target.value)}
                   onBlur={() => commit()}
-                  aria-label="Sample or Accession ID"
+                  aria-label="Sample ID"
                   inputMode="text"
                 />
                 <button className="press btn btn-ghost scan-btn" onClick={scanSample}>

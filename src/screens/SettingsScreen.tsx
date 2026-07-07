@@ -45,8 +45,9 @@ export function SettingsScreen() {
         <div className="eyebrow">Device &amp; registration</div>
         <h1 className="page-title">Settings</h1>
         <p className="page-sub hide-compact">
-          Register and select the GoDEVICE under control, set its location, and configure clinic, operators, and
-          integrations. The active device drives every run and is shown in the status bar on every screen.
+          Capture your <b>facility</b>, <b>device</b>, and <b>user</b> information here: register and select the GoDEVICE
+          under control, name it and set its location, edit clinic details, and manage operators and integrations. The
+          active device drives every run and is shown in the status bar on every screen.
         </p>
       </div>
 
