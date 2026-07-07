@@ -10,7 +10,7 @@ import { Logo } from "../components/Logo";
  * unlisted URL. Unlock persists in localStorage so a second window (the GoDEVICE
  * kiosk, ?device=1) doesn't re-prompt.
  */
-const EXPECTED = 3788775592; // hashSeed("GoCARE2026")
+const EXPECTED = 704791799; // hashSeed("4639")
 export const ACCESS_KEY = "gocare-access";
 
 export function isUnlocked(): boolean {

@@ -57,4 +57,4 @@ curl -s -X POST -H "$AUTH" -H "Accept: application/vnd.github+json" \
 
 echo ""
 echo "Done. Live in ~1-2 min at:  https://$OWNER.github.io/$REPO/"
-echo "Access code: GoCARE2026"
+echo "Access code: 4639"
