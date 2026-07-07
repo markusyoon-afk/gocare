@@ -5,9 +5,9 @@ import { useNndss, nndssTotals } from "../lib/nndss";
 
 const DAYS = 28;
 const RANGES = [
-  { label: "12 wk", weeks: 12 },
-  { label: "26 wk", weeks: 26 },
-  { label: "52 wk", weeks: 52 },
+  { label: "3 mo", weeks: 13 },
+  { label: "6 mo", weeks: 26 },
+  { label: "1 yr", weeks: 52 },
   { label: "2 yr", weeks: 104 },
 ];
 
