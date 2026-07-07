@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { useSession } from "../store/session";
-import { useDevice, activeDevice } from "../store/device";
 import { unifiedHistory, dailySeries, byPathogen, trend, pathogenName } from "../lib/history";
-import { useNndss, nndssTotals, NNDSS_LOCATIONS, locationLabel, stateFromLabel } from "../lib/nndss";
+import { useNndss, nndssTotals, NNDSS_LOCATIONS, locationLabel } from "../lib/nndss";
+import { coordsToState } from "../lib/geo";
 import { generateInsights } from "../lib/insights";
 
 const DAYS = 28;
@@ -36,10 +36,36 @@ function fmtWeekDate(year: number, week: number, withYear = true): string {
 export function AnalyticsScreen() {
   const { state } = useSession();
   const rows = unifiedHistory(state.history);
-  const { state: dev } = useDevice();
-  const deviceState = stateFromLabel(activeDevice(dev).location?.label);
   const [location, setLocation] = useState("U.S. Residents");
+  const [geoState, setGeoState] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [geoErr, setGeoErr] = useState(false);
   const { data: nndss, live, loading } = useNndss(location);
+
+  // Real GPS → reverse-geocode → select that state in the CDC benchmark.
+  function useMyLocation() {
+    if (!navigator.geolocation) {
+      setGeoErr(true);
+      return;
+    }
+    setLocating(true);
+    setGeoErr(false);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const st = await coordsToState(pos.coords.latitude, pos.coords.longitude);
+        setLocating(false);
+        if (st && NNDSS_LOCATIONS.states.some(([v]) => v === st)) {
+          setGeoState(st);
+          setLocation(st);
+        } else setGeoErr(true);
+      },
+      () => {
+        setLocating(false);
+        setGeoErr(true);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
   const [rangeWeeks, setRangeWeeks] = useState(26);
   const rangeLabel = RANGES.find((r) => r.weeks === rangeWeeks)?.label ?? "";
   // Window each pathogen's series to the selected duration.
@@ -158,9 +184,10 @@ export function AnalyticsScreen() {
               {NNDSS_LOCATIONS.states.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </optgroup>
           </select>
-          {deviceState && location !== deviceState && (
-            <button className="press btn btn-ghost loc-device" onClick={() => setLocation(deviceState)}>📍 {locationLabel(deviceState)}</button>
-          )}
+          <button className="press btn btn-ghost loc-device" onClick={useMyLocation} disabled={locating}>
+            📍 {locating ? "Locating…" : geoState ?? "My location"}
+          </button>
+          {geoErr && <span className="helper" style={{ color: "var(--amber)" }}>Location unavailable — pick a state</span>}
           <span className={"chip " + (loading ? "" : live ? "chip-susceptible" : "")}>
             {loading ? "◍ loading…" : live ? "● LIVE · data.cdc.gov" : "◍ snapshot"}
           </span>
