@@ -11,6 +11,24 @@ const RANGES = [
   { label: "2 yr", weeks: 104 },
 ];
 
+/** MMWR week-ending (Saturday) date for an (year, week). */
+function weekEndDate(year: number, week: number): Date {
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const start = new Date(jan4);
+  start.setUTCDate(jan4.getUTCDate() - jan4.getUTCDay()); // Sunday of MMWR week 1
+  const d = new Date(start);
+  d.setUTCDate(start.getUTCDate() + (week - 1) * 7 + 6); // Saturday (week end) of target week
+  return d;
+}
+function fmtWeekDate(year: number, week: number, withYear = true): string {
+  return weekEndDate(year, week).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+    ...(withYear ? { year: "numeric" } : {}),
+  });
+}
+
 /** Analytics — result trends over time for proactive surveillance. */
 export function AnalyticsScreen() {
   const { state } = useSession();
@@ -25,7 +43,9 @@ export function AnalyticsScreen() {
     return { ...row, pts, latest: pts.length ? pts[pts.length - 1].cases : 0, total: pts.reduce((s, p) => s + p.cases, 0) };
   });
   const span = natWindowed[0]?.pts ?? [];
-  const spanLabel = span.length ? `W${span[0].week} ${span[0].year} – W${span[span.length - 1].week} ${span[span.length - 1].year}` : "";
+  const spanLabel = span.length
+    ? `${fmtWeekDate(span[0].year, span[0].week)} – ${fmtWeekDate(span[span.length - 1].year, span[span.length - 1].week)}`
+    : "";
 
   const totalPos = rows.filter((r) => r.pathogen).length;
   const resistant = rows.filter((r) => r.resistant).length;
@@ -195,7 +215,7 @@ function Sparkline({ points }: { points: Pt[] }) {
           <div className="spark-marker" style={{ left: `${pct}%` }} />
           <div className="spark-dot" style={{ left: `${pct}%`, top: `${dotTopPct}%` }} />
           <div className={"spark-tip" + (pct > 78 ? " tip-left" : pct < 22 ? " tip-right" : "")} style={{ left: `${pct}%` }}>
-            <b>{active.cases.toLocaleString()}</b> cases · W{active.week} {active.year}
+            <b>{active.cases.toLocaleString()}</b> cases · {fmtWeekDate(active.year, active.week)}
           </div>
         </>
       )}
