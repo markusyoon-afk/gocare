@@ -112,6 +112,7 @@ function LiveBridge() {
 function Workspace() {
   const { state, dispatch } = useSession();
   const [view, setView] = useState<View>("workflow");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     let last = 0;
@@ -140,6 +141,7 @@ function Workspace() {
     const lot = `${APPS[appId].qrPrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
     dispatch({ type: "SCAN_CARTRIDGE", appId, lot });
     setView("workflow");
+    setDrawerOpen(false);
   }
   function goDashboard() {
     setView("workflow");
@@ -147,6 +149,7 @@ function Workspace() {
   }
   function nav(v: View) {
     v === "workflow" ? goDashboard() : setView(v);
+    setDrawerOpen(false);
   }
 
   const stageLabel: Record<string, string> = { home: "Dashboard", configure: "Configure", running: "Running", results: "Results" };
@@ -167,7 +170,8 @@ function Workspace() {
       </div>
 
       <div className="shell">
-        <aside className="sidebar">
+        {drawerOpen && <div className="drawer-backdrop" onClick={() => setDrawerOpen(false)} />}
+        <aside className={"sidebar" + (drawerOpen ? " open" : "")}>
           <div className="brand">
             <Logo className="logo-mark" size={38} />
             <div>
@@ -206,6 +210,7 @@ function Workspace() {
 
         <main className="main">
           <header className="topbar">
+            <button className="press hamburger" onClick={() => setDrawerOpen(true)} aria-label="Open menu">☰</button>
             <Logo className="logo-mark topbar-logo" size={26} />
             <div className="crumbs">
               <span>GoCARE</span>

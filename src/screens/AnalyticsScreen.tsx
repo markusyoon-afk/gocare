@@ -78,9 +78,10 @@ export function AnalyticsScreen() {
       </div>
 
       {rising && (
-        <div className="verdict verdict-resistant alert-banner" style={{ marginBottom: 18 }}>
-          <div className="verdict-icon" style={{ background: "rgba(242,178,92,0.18)" }}>▲</div>
+        <div className="epi-alert" style={{ marginBottom: 18 }}>
+          <div className="epi-icon">📈</div>
           <div>
+            <div className="epi-eyebrow">Surveillance signal · possible cluster</div>
             <div className="stat" style={{ fontSize: 17 }}>
               {pathogenName(rising.id)} detections up {rising.t.pct}% week-over-week
             </div>
@@ -254,26 +255,64 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function LineChart({ series, overlay, overlayLabel }: { series: number[]; overlay: number[]; overlayLabel: string }) {
+  const [idx, setIdx] = useState<number | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const W = 520;
   const H = 160;
   const pad = 8;
+  const n = series.length;
   const max = Math.max(2, ...series, ...overlay);
-  const pts = (arr: number[]) =>
-    arr
-      .map((v, i) => {
-        const x = pad + (i / (arr.length - 1)) * (W - pad * 2);
-        const y = H - pad - (v / max) * (H - pad * 2);
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(" ");
+  const X = (i: number) => pad + (i / (n - 1)) * (W - pad * 2);
+  const Y = (v: number) => H - pad - (v / max) * (H - pad * 2);
+  const line = (arr: number[]) => arr.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+
+  function locate(clientX: number) {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const rel = (clientX - r.left) / r.width;
+    setIdx(Math.max(0, Math.min(n - 1, Math.round(rel * (n - 1)))));
+  }
+  const dateOf = (i: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (n - 1 - i));
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+  const pct = idx != null ? (idx / (n - 1)) * 100 : 0;
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="160" preserveAspectRatio="none" role="img" aria-label={`Detections per day, ${overlayLabel} overlaid`}>
-      <line x1={pad} y1={H - pad} x2={W - pad} y2={H - pad} stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-      <polyline points={pts(series)} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-      {overlay.length > 0 && (
-        <polyline points={pts(overlay)} fill="none" stroke="var(--amber)" strokeWidth="2" strokeDasharray="4 3" strokeLinejoin="round" />
+    <div
+      className="spark-wrap chart-wrap"
+      ref={ref}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        locate(e.clientX);
+      }}
+      onPointerMove={(e) => {
+        if (e.buttons || e.pointerType === "mouse") locate(e.clientX);
+      }}
+      onPointerUp={() => setIdx(null)}
+      onPointerLeave={() => setIdx(null)}
+    >
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" role="img" aria-label="Detections per day — drag to read">
+        <line x1={pad} y1={H - pad} x2={W - pad} y2={H - pad} stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+        <polyline points={line(series)} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        {overlay.length > 0 && (
+          <polyline points={line(overlay)} fill="none" stroke="var(--amber)" strokeWidth="2" strokeDasharray="4 3" strokeLinejoin="round" />
+        )}
+      </svg>
+      {idx != null && (
+        <>
+          <div className="spark-marker" style={{ left: `${pct}%` }} />
+          <div className="spark-dot" style={{ left: `${pct}%`, top: `${(Y(series[idx]) / H) * 100}%` }} />
+          {overlay.length > 0 && <div className="spark-dot dot-amber" style={{ left: `${pct}%`, top: `${(Y(overlay[idx]) / H) * 100}%` }} />}
+          <div className={"spark-tip" + (pct > 72 ? " tip-left" : pct < 20 ? " tip-right" : "")} style={{ left: `${pct}%`, top: "-6px" }}>
+            {dateOf(idx)} · <b>{series[idx]}</b> positive{series[idx] === 1 ? "" : "s"}
+            {overlay.length > 0 && ` · ${overlay[idx]} ${overlayLabel}`}
+          </div>
+        </>
       )}
-    </svg>
+    </div>
   );
 }
 

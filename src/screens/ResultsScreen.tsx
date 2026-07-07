@@ -12,6 +12,7 @@ import {
 import { useSession, can } from "../store/session";
 import { useDevice, activeDevice } from "../store/device";
 import { summarize, clinicalReadout } from "../lib/format";
+import { openDetectionReport } from "../lib/report";
 import type { DetectResult } from "../engine/run";
 
 export function ResultsScreen() {
@@ -76,6 +77,22 @@ export function ResultsScreen() {
 
 function DetectResults({ result, environmental }: { result: DetectResult; environmental: boolean }) {
   const { state, dispatch } = useSession();
+  const { state: dev } = useDevice();
+
+  function report() {
+    const unit = activeDevice(dev);
+    openDetectionReport({
+      clinic: dev.clinic,
+      device: { model: unit.model, serial: unit.serial, label: unit.label, locationLabel: unit.location?.label ?? unit.label },
+      operatorName: state.operator?.name ?? "—",
+      sampleId: state.sampleId,
+      patientRef: state.patientRef,
+      appId: state.appId ?? "godetect",
+      matrixId: state.matrixId,
+      result,
+      signedBy: state.signedBy,
+    });
+  }
   const positive = result.positivePathogen ? PATHOGENS[result.positivePathogen] : null;
   const anyResistant = result.interpretation.calls.some((c) => c.susceptibility === "resistant");
 
@@ -257,6 +274,9 @@ function DetectResults({ result, environmental }: { result: DetectResult; enviro
           ) : (
             <div className="helper">Your role ({state.operator?.role}) cannot sign out results. A clinician or lab technician must review.</div>
           )}
+          <button className="press btn btn-ghost" style={{ width: "100%", marginTop: 10 }} onClick={report}>
+            ⤓ Report (PDF)
+          </button>
         </div>
 
         {positive && (

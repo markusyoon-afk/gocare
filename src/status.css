@@ -261,6 +261,23 @@
   color: var(--muted-2);
 }
 
+/* Inline editable field (Settings key/value rows) */
+.field-inline {
+  background: #0b1218;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 5px 9px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  max-width: 210px;
+  text-align: right;
+}
+.field-inline:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 /* GoCARE logomark */
 .logo-mark {
   display: block;
@@ -273,9 +290,51 @@
   display: none;
   margin-right: 10px;
 }
+.hamburger {
+  display: none;
+  background: none;
+  box-shadow: none;
+  border: none;
+  font-size: 20px;
+  color: var(--ink);
+  padding: 2px 8px;
+  margin-right: 4px;
+  cursor: pointer;
+}
+.drawer-backdrop {
+  display: none;
+}
 @media (max-width: 720px) {
   .topbar-logo {
     display: block;
+  }
+  .hamburger {
+    display: block;
+  }
+  .sidebar {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 264px;
+    max-width: 84vw;
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    background: #0b1116;
+    box-shadow: 0 0 44px rgba(0, 0, 0, 0.65);
+    overflow-y: auto;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 55;
   }
 }
 
@@ -369,6 +428,39 @@
   font-weight: 600;
   font-family: var(--font-display);
   background: #0b1218;
+}
+
+/* Epidemiological surveillance-signal alert — violet, distinct from the
+   amber/red inventory-safety alert so the two are never confused. */
+.epi-alert {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(139, 124, 246, 0.16), rgba(139, 124, 246, 0.04));
+  border: 1px solid rgba(139, 124, 246, 0.45);
+}
+.epi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: rgba(139, 124, 246, 0.2);
+  flex-shrink: 0;
+}
+.epi-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  margin-bottom: 3px;
+}
+.epi-alert .stat {
+  color: #c7b8ff;
 }
 
 /* Safety-level slider (inventory) */
@@ -506,6 +598,10 @@
   transform: translate(-50%, -50%);
   pointer-events: none;
   box-shadow: 0 0 8px rgba(53, 204, 230, 0.85);
+}
+.spark-dot.dot-amber {
+  background: var(--amber);
+  box-shadow: 0 0 8px rgba(242, 178, 92, 0.85);
 }
 .spark-tip {
   position: absolute;

@@ -79,7 +79,8 @@ export function SettingsScreen() {
                       {geo === "locating" ? "Locating…" : "📍 Use GPS"}
                     </button>
                     <span className="chip chip-accent">controlling</span>
-                    {geo === "error" && <span className="helper" style={{ color: "var(--amber)" }}>Location blocked</span>}
+                    {geo === "error" && <span className="helper" style={{ color: "var(--amber)" }}>GPS unavailable — type it above</span>}
+                    {geo === "ok" && <span className="helper" style={{ color: "var(--accent)" }}>Location set ✓</span>}
                   </div>
                 ) : (
                   <button className="press btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5 }} onClick={() => dispatch({ type: "SELECT_DEVICE", id: d.id })}>Control this</button>
@@ -99,7 +100,16 @@ export function SettingsScreen() {
           <div className="kv"><span className="k">Serial number</span><span className="v mono">{active.serial}</span></div>
           <div className="kv"><span className="k">Firmware</span><span className="v mono">v{active.firmware}</span></div>
           <div className="kv"><span className="k">Thermal</span><span className="v mono">37.0°C</span></div>
-          <div className="kv"><span className="k">Location</span><span className="v">{active.location?.label ?? "— set below —"}</span></div>
+          <div className="kv">
+            <span className="k">Location</span>
+            <input
+              className="field-inline"
+              value={active.location?.label ?? ""}
+              placeholder="City, State — or use GPS"
+              onChange={(e) => dispatch({ type: "SET_LOCATION", id: active.id, location: { lat: active.location?.lat ?? 0, lng: active.location?.lng ?? 0, label: e.target.value } })}
+              aria-label="Device location"
+            />
+          </div>
           <div className="kv"><span className="k">GoCARE / UDI-DI</span><span className="v mono">v{SOFTWARE.version} · {SOFTWARE.udiDi}</span></div>
         </div>
 

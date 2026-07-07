@@ -1,7 +1,6 @@
 /**
- * GoCARE logomark — GoDx-family diagnostic mark.
- * A cyan gradient chip with the open instrument ring and a sample droplet at its
- * center: reads as molecular diagnostics (analyze a sample). Matches the app icon.
+ * GoCARE logomark — a hexagon (molecular / biotech) holding a sample droplet.
+ * One clean idea that reads at any size, from the 26px header to the app icon.
  */
 export function Logo({ size = 38, className }: { size?: number; className?: string }) {
   return (
@@ -16,34 +15,28 @@ export function Logo({ size = 38, className }: { size?: number; className?: stri
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="gcTile" x1="5" y1="2" x2="43" y2="46" gradientUnits="userSpaceOnUse">
+        <linearGradient id="gcHex" x1="8" y1="3" x2="40" y2="45" gradientUnits="userSpaceOnUse">
           <stop stopColor="#63E6F8" />
-          <stop offset="1" stopColor="#149BC0" />
+          <stop offset="1" stopColor="#12A0C6" />
         </linearGradient>
-        <radialGradient id="gcHi" cx="0.32" cy="0.2" r="0.9">
-          <stop stopColor="#FFFFFF" stopOpacity="0.4" />
-          <stop offset="0.55" stopColor="#FFFFFF" stopOpacity="0" />
+        <radialGradient id="gcHexHi" cx="0.33" cy="0.2" r="0.85">
+          <stop stopColor="#FFFFFF" stopOpacity="0.42" />
+          <stop offset="0.6" stopColor="#FFFFFF" stopOpacity="0" />
         </radialGradient>
       </defs>
-      {/* chip + highlight + rim */}
-      <rect x="1.5" y="1.5" width="45" height="45" rx="13" fill="url(#gcTile)" />
-      <rect x="1.5" y="1.5" width="45" height="45" rx="13" fill="url(#gcHi)" />
-      <rect x="2.4" y="2.4" width="43.2" height="43.2" rx="11.8" fill="none" stroke="#FFFFFF" strokeOpacity="0.3" strokeWidth="1" />
-      {/* open diagnostic ring (instrument) */}
-      <circle
-        cx="24"
-        cy="24"
-        r="12.6"
-        fill="none"
-        stroke="#06222B"
-        strokeWidth="4.4"
-        strokeLinecap="round"
-        strokeDasharray="59 20"
-        transform="rotate(-56 24 24)"
+      {/* hexagon chip */}
+      <path
+        d="M24 2.5 L42.62 13.25 L42.62 34.75 L24 45.5 L5.38 34.75 L5.38 13.25 Z"
+        fill="url(#gcHex)"
+        stroke="#7FEDFB"
+        strokeOpacity="0.35"
+        strokeWidth="0.8"
+        strokeLinejoin="round"
       />
+      <path d="M24 2.5 L42.62 13.25 L42.62 34.75 L24 45.5 L5.38 34.75 L5.38 13.25 Z" fill="url(#gcHexHi)" />
       {/* sample droplet */}
       <path
-        d="M24 17.4 C 26.7 21.3 28.9 23.7 28.9 26.4 A 4.9 4.9 0 1 1 19.1 26.4 C 19.1 23.7 21.3 21.3 24 17.4 Z"
+        d="M24 14.6 C 27.7 19.7 30.6 23.1 30.6 27.0 A 6.6 6.6 0 1 1 17.4 27.0 C 17.4 23.1 20.3 19.7 24 14.6 Z"
         fill="#06222B"
       />
     </svg>

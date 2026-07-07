@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   APPS,
   MATRICES,
@@ -62,7 +62,10 @@ export function ConfigureScreen() {
 
   // Auto-populate a Sample ID on load so a run can start right away; the operator
   // can still override it via the preset dropdown, Scan, or manual entry.
+  const autoDone = useRef(false);
   useEffect(() => {
+    if (autoDone.current) return;
+    autoDone.current = true;
     if (!state.sampleId && !sid.trim()) {
       const id = `ACC-${Math.floor(100000 + Math.random() * 899999)}`;
       setSid(id);
