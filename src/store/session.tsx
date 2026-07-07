@@ -73,7 +73,7 @@ type Action =
   | { type: "LOCK" }
   | { type: "UNLOCK" }
   | { type: "ACTIVITY" }
-  | { type: "SCAN_CARTRIDGE"; appId: AppId; lot: string }
+  | { type: "SCAN_CARTRIDGE"; appId: AppId; lot: string; matrixId?: string; sampleId?: string; envSource?: string }
   | { type: "SELECT_MATRIX"; matrixId: string; forcedPathogen?: string }
   | { type: "SET_ENV_SOURCE"; source: string }
   | { type: "SET_SAMPLE"; sampleId: string; patientRef: string | null }
@@ -151,14 +151,23 @@ function reducer(state: SessionState, action: Action): SessionState {
       return state.locked ? state : { ...state, lastActivity: Date.now() };
 
     case "SCAN_CARTRIDGE":
+      // The QR identifies the test, sample type/targets, and accessions the sample
+      // in one scan — the configure screen is pre-filled and ready to run.
       return {
         ...state,
         ...base,
         stage: "configure",
         appId: action.appId,
         lot: action.lot,
+        matrixId: action.matrixId ?? null,
+        sampleId: action.sampleId ?? null,
+        envSource: action.envSource ?? null,
         lastActivity: Date.now(),
-        audit: log(state, "Cartridge scanned", `${action.appId.toUpperCase()} · ${action.lot}`),
+        audit: log(
+          state,
+          "Cartridge scanned",
+          `${action.appId.toUpperCase()} · ${action.lot}${action.matrixId ? " · " + action.matrixId : ""}${action.sampleId ? " · sample " + action.sampleId : ""}`,
+        ),
       };
     case "SELECT_MATRIX":
       return { ...state, matrixId: action.matrixId, forcedPathogen: action.forcedPathogen, lastActivity: Date.now() };

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { SessionProvider, useSession } from "./store/session";
 import { DeviceProvider, useDevice, inventorySummary, activeDevice } from "./store/device";
-import { APPS, APP_ORDER, type AppId } from "./data/catalog";
+import { APPS, APP_ORDER, makeScan, type AppId } from "./data/catalog";
 import { SOFTWARE } from "./data/compliance";
 import { clinicalReadout, deviceStatus } from "./lib/format";
 import { publish, subscribe, isDeviceWindow } from "./lib/live";
@@ -138,8 +138,7 @@ function Workspace() {
   }, [state.lastActivity, dispatch]);
 
   function launch(appId: AppId) {
-    const lot = `${APPS[appId].qrPrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
-    dispatch({ type: "SCAN_CARTRIDGE", appId, lot });
+    dispatch({ type: "SCAN_CARTRIDGE", ...makeScan(appId) });
     setView("workflow");
     setDrawerOpen(false);
   }

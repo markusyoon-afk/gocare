@@ -238,6 +238,26 @@ export const ROADMAP_MATRICES = ["Blood", "Saliva", "Expanded environmental"];
 /** GoH₂O environmental sources (all run on the wastewater/environmental panel). */
 export const ENV_SOURCES = ["Wastewater", "Lake", "Stream"];
 
+/** The sample type / source a cartridge's QR encodes (so a scan pre-loads targets). */
+export const CARTRIDGE_SAMPLE: Record<AppId, { matrixId?: string; envSource?: string }> = {
+  goprep: { matrixId: "stool" },
+  godetect: { matrixId: "stool" },
+  goseq: {},
+  goh2o: { matrixId: "wastewater", envSource: "Wastewater" },
+};
+
+/** Build a full cartridge-scan payload: test + sample type/targets + accessioned sample. */
+export function makeScan(appId: AppId): { appId: AppId; lot: string; sampleId: string; matrixId?: string; envSource?: string } {
+  const cfg = CARTRIDGE_SAMPLE[appId];
+  return {
+    appId,
+    lot: `${APPS[appId].qrPrefix}-${Math.floor(1000 + Math.random() * 9000)}`,
+    sampleId: `ACC-${Math.floor(100000 + Math.random() * 899999)}`,
+    matrixId: cfg.matrixId,
+    envSource: cfg.envSource,
+  };
+}
+
 /** Preset sample IDs for quick demo runs (fills the Sample ID field). */
 export const DEMO_SAMPLES = [
   { id: "ACC-100482", note: "Stool · GI symptoms" },

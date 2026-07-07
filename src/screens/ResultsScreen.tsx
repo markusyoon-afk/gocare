@@ -8,6 +8,7 @@ import {
   GOSEQ_KIT,
   GOSEQ_DOWNSTREAM,
   MNGS_EXAMPLE,
+  makeScan,
 } from "../data/catalog";
 import { useSession, can } from "../store/session";
 import { useDevice, activeDevice } from "../store/device";
@@ -369,14 +370,14 @@ function PrepResults() {
         <button
           className="press btn"
           style={{ justifyContent: "flex-start" }}
-          onClick={() => dispatch({ type: "SCAN_CARTRIDGE", appId: "godetect", lot: "GODX-DTCT-" + Math.floor(1000 + Math.random() * 9000) })}
+          onClick={() => dispatch({ type: "SCAN_CARTRIDGE", ...makeScan("godetect"), sampleId: state.sampleId ?? undefined, matrixId: state.matrixId ?? undefined })}
         >
           → GoDETECT · pathogen + AMR
         </button>
         <button
           className="press btn"
           style={{ justifyContent: "flex-start" }}
-          onClick={() => dispatch({ type: "SCAN_CARTRIDGE", appId: "goseq", lot: "GODX-SEQ-" + Math.floor(1000 + Math.random() * 9000) })}
+          onClick={() => dispatch({ type: "SCAN_CARTRIDGE", ...makeScan("goseq"), sampleId: state.sampleId ?? undefined })}
         >
           → GoSEQ · mNGS library prep
         </button>

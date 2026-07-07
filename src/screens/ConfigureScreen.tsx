@@ -82,9 +82,12 @@ export function ConfigureScreen() {
   return (
     <div className="fade-in">
       <div className="page-head">
-        <div className="eyebrow">{app.tm} · Cartridge loaded</div>
-        <h1 className="page-title">{isSeq ? "Add the sample &amp; set up" : "Add the sample"}</h1>
-        <p className="page-sub hide-compact">{app.description}</p>
+        <div className="eyebrow">{app.tm} · Cartridge scanned</div>
+        <h1 className="page-title">Confirm &amp; run</h1>
+        <p className="page-sub hide-compact">
+          The QR loaded the test, {isSeq ? "agnostic sample setup" : "sample type, and targets"}, and accessioned the
+          sample. Adjust below only if needed — otherwise press Start.
+        </p>
       </div>
 
       <div className="cfg-grid">

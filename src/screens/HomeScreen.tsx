@@ -1,4 +1,4 @@
-import { APPS, APP_ORDER, type AppId } from "../data/catalog";
+import { APPS, APP_ORDER, makeScan, type AppId } from "../data/catalog";
 import { FLOWS, typicalLabel } from "../data/stages";
 import { useSession } from "../store/session";
 import { useDevice, activeDevice } from "../store/device";
@@ -55,7 +55,7 @@ export function HomeScreen() {
           const app = APPS[id];
           const lot = makeLot(id);
           return (
-            <button key={id} className="press tile" onClick={() => dispatch({ type: "SCAN_CARTRIDGE", appId: id, lot })}>
+            <button key={id} className="press tile" onClick={() => dispatch({ type: "SCAN_CARTRIDGE", ...makeScan(id) })}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <span className="tile-meta">{app.tagline}</span>
               </div>
