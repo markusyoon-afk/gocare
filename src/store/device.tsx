@@ -34,6 +34,7 @@ export interface CartridgeStock {
   stock: number;
   used: number;
   threshold: number;
+  recommended: number; // factory-recommended safety level (marked on the slider)
   moq: number;
   autoReorder: boolean;
   incoming: number;
@@ -65,7 +66,7 @@ export interface DeviceState {
 
 const MOQ = 10;
 function stock(n: number, threshold: number, autoReorder = true): CartridgeStock {
-  return { stock: n, used: 0, threshold, moq: MOQ, autoReorder, incoming: 0 };
+  return { stock: n, used: 0, threshold, recommended: threshold, moq: MOQ, autoReorder, incoming: 0 };
 }
 
 const initial: DeviceState = {

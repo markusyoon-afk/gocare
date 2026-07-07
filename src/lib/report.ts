@@ -138,16 +138,25 @@ export function openDetectionReport(p: ReportParams): void {
   <div class="disc">Performance figures shown in the app are illustrative demo values. Molecular AMR detects known resistance markers only; absence is reported as "no resistance detected," not phenotypic susceptibility. Confirm per local antibiogram and guidelines.</div>
 
   <div class="foot"><span>GoDx, Inc. — GoCARE SaMD</span><span>Investigational Use Only — not for diagnostic procedures</span><span>Page 1 of 1</span></div>
-
-  <script>window.onload=function(){setTimeout(function(){window.print();},250);};</script>
 </body></html>`;
 
-  const w = window.open("", "_blank", "width=820,height=1060");
-  if (!w) {
-    alert("Please allow pop-ups to generate the PDF report.");
+  // Print via a hidden iframe — no pop-up window, works in every context.
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  Object.assign(iframe.style, { position: "fixed", right: "0", bottom: "0", width: "0", height: "0", border: "0", opacity: "0" });
+  document.body.appendChild(iframe);
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    document.body.removeChild(iframe);
     return;
   }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+  doc.open();
+  doc.write(html);
+  doc.close();
+  const win = iframe.contentWindow!;
+  win.onafterprint = () => setTimeout(() => iframe.parentNode && document.body.removeChild(iframe), 300);
+  setTimeout(() => {
+    win.focus();
+    win.print();
+  }, 350);
 }

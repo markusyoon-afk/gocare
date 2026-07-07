@@ -430,6 +430,79 @@
   background: #0b1218;
 }
 
+/* AI bioinformatics insight panel */
+.ai-panel {
+  background: linear-gradient(160deg, rgba(53, 204, 230, 0.06), rgba(139, 124, 246, 0.07));
+  border: 1px solid rgba(139, 124, 246, 0.28);
+}
+.ai-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.ai-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 100px;
+  background: linear-gradient(90deg, var(--accent), #8b7cf6);
+  color: #06222b;
+  font-weight: 700;
+}
+.ai-headline {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+}
+.ai-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ai-insight {
+  border-left: 3px solid var(--line-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.ai-insight.tone-ok {
+  border-left-color: var(--green);
+}
+.ai-insight.tone-watch {
+  border-left-color: var(--amber);
+}
+.ai-insight.tone-alert {
+  border-left-color: #a78bfa;
+}
+.ai-domain {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+.ai-glyph {
+  font-size: 15px;
+}
+.ai-text {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.ai-foot {
+  margin-top: 12px;
+}
+@media (max-width: 720px) {
+  .ai-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Epidemiological surveillance-signal alert — violet, distinct from the
    amber/red inventory-safety alert so the two are never confused. */
 .epi-alert {
@@ -476,11 +549,43 @@
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
+.safety-slider-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.safety-rec-mark {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 15px;
+  background: var(--green);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: 0 0 5px rgba(70, 211, 154, 0.9);
+}
 .safety-slider {
   flex: 1;
   height: 4px;
   cursor: pointer;
   min-width: 0;
+}
+.safety-hint {
+  font-size: 11px;
+  margin-top: 5px;
+}
+.rec-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--green);
+  vertical-align: middle;
+  margin-right: 5px;
 }
 .safety-val {
   font-family: var(--font-display);

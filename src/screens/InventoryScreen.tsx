@@ -72,20 +72,34 @@ export function InventoryScreen() {
                 <div className="inv-threshold" style={{ left: `${thrPct}%` }} title="Safety level" />
               </div>
 
-              {/* Adjustable safety slider */}
+              {/* Adjustable safety slider with a marked, detented recommended level */}
               <div className="safety-row">
                 <span className="safety-label">Safety level</span>
-                <input
-                  className="safety-slider"
-                  type="range"
-                  min={0}
-                  max={capacity}
-                  value={inv.threshold}
-                  onChange={(e) => dispatch({ type: "SET_THRESHOLD", appId: id, threshold: Number(e.target.value) })}
-                  aria-label={`${APPS[id].name} safety level`}
-                  style={{ accentColor: color }}
-                />
+                <div className="safety-slider-wrap">
+                  <div className="safety-rec-mark" style={{ left: `${(inv.recommended / capacity) * 100}%` }} title={`Recommended: ${inv.recommended}`} />
+                  <input
+                    className="safety-slider"
+                    type="range"
+                    min={0}
+                    max={capacity}
+                    value={inv.threshold}
+                    onChange={(e) => {
+                      let v = Number(e.target.value);
+                      if (Math.abs(v - inv.recommended) <= 1) v = inv.recommended; // detent snaps to recommended
+                      dispatch({ type: "SET_THRESHOLD", appId: id, threshold: v });
+                    }}
+                    aria-label={`${APPS[id].name} safety level`}
+                    style={{ accentColor: color }}
+                  />
+                </div>
                 <span className="safety-val" style={{ color }}>{inv.threshold}</span>
+              </div>
+              <div className="safety-hint">
+                {inv.threshold < inv.recommended ? (
+                  <span style={{ color: "var(--amber)" }}>⚠ Below recommended ({inv.recommended}) — may run out before auto-reorder arrives</span>
+                ) : (
+                  <span className="helper"><span className="rec-dot" /> Recommended safety level: {inv.recommended}</span>
+                )}
               </div>
 
               <div className="inv-stats">

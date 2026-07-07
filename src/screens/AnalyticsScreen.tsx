@@ -3,6 +3,7 @@ import { useSession } from "../store/session";
 import { useDevice, activeDevice } from "../store/device";
 import { unifiedHistory, dailySeries, byPathogen, trend, pathogenName } from "../lib/history";
 import { useNndss, nndssTotals, NNDSS_LOCATIONS, locationLabel, stateFromLabel } from "../lib/nndss";
+import { generateInsights } from "../lib/insights";
 
 const DAYS = 28;
 const RANGES = [
@@ -66,6 +67,9 @@ export function AnalyticsScreen() {
   const topId = byPath[0]?.id;
   const topSeries = topId ? dailySeries(rows, DAYS, topId) : [];
 
+  const cdcLatest = Object.fromEntries(nat.map((n) => [n.id, n.latest]));
+  const ai = generateInsights({ rows, byPath, rising, location: locationLabel(location), cdcLatest });
+
   return (
     <div className="fade-in">
       <div className="page-head">
@@ -92,6 +96,26 @@ export function AnalyticsScreen() {
           </div>
         </div>
       )}
+
+      {/* AI bioinformatics insights across human · community · environment · public health */}
+      <div className="panel panel-pad ai-panel" style={{ marginBottom: 18 }}>
+        <div className="ai-head">
+          <span className="ai-badge">✦ AI</span>
+          <span className="ai-headline">{ai.headline}</span>
+        </div>
+        <div className="ai-grid">
+          {ai.insights.map((ins) => (
+            <div key={ins.domain} className={"ai-insight tone-" + ins.tone}>
+              <div className="ai-domain"><span className="ai-glyph">{ins.glyph}</span>{ins.domain}</div>
+              <div className="ai-text">{ins.text}</div>
+            </div>
+          ))}
+        </div>
+        <div className="helper ai-foot">
+          AI-assisted synthesis of device results + live CDC data across human, community, environment &amp; public
+          health — augmented by GoSEQ metagenomics (BugSEQ) for novel &amp; drug-resistant threats. Illustrative demo.
+        </div>
+      </div>
 
       <div className="grid grid-4 posture-strip">
         <Stat label="Total positives (28d)" value={String(totalPos)} />
