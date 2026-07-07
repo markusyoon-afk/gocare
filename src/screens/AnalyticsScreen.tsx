@@ -215,7 +215,7 @@ function Sparkline({ points }: { points: Pt[] }) {
           <div className="spark-marker" style={{ left: `${pct}%` }} />
           <div className="spark-dot" style={{ left: `${pct}%`, top: `${dotTopPct}%` }} />
           <div className={"spark-tip" + (pct > 78 ? " tip-left" : pct < 22 ? " tip-right" : "")} style={{ left: `${pct}%` }}>
-            <b>{active.cases.toLocaleString()}</b> cases · {fmtWeekDate(active.year, active.week)}
+            <b>{active.cases.toLocaleString()}</b> cases · wk ending {fmtWeekDate(active.year, active.week)}
           </div>
         </>
       )}
