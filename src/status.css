@@ -456,6 +456,60 @@
 .nat-spark {
   min-width: 0;
 }
+
+/* Interactive sparkline scrubber */
+.spark-wrap {
+  position: relative;
+  touch-action: none;
+  cursor: crosshair;
+}
+.spark-wrap svg {
+  display: block;
+}
+.spark-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--accent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.spark-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #0e151b;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(53, 204, 230, 0.85);
+}
+.spark-tip {
+  position: absolute;
+  top: -18px;
+  transform: translateX(-50%);
+  background: #0b1218;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+  color: var(--ink);
+  pointer-events: none;
+  z-index: 3;
+}
+.spark-tip b {
+  color: var(--accent);
+}
+.spark-tip.tip-left {
+  transform: translateX(-100%);
+}
+.spark-tip.tip-right {
+  transform: translateX(0);
+}
 .nat-metric {
   display: flex;
   flex-direction: column;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSession } from "../store/session";
 import { unifiedHistory, dailySeries, byPathogen, trend, pathogenName } from "../lib/history";
 import { useNndss, nndssTotals } from "../lib/nndss";
@@ -123,7 +123,7 @@ export function AnalyticsScreen() {
           {natWindowed.map((row) => (
             <div key={row.id} className="nat-row">
               <div className="nat-name">{pathogenName(row.id)}</div>
-              <div className="nat-spark"><Sparkline values={row.pts.map((p) => p.cases)} /></div>
+              <div className="nat-spark"><Sparkline points={row.pts} /></div>
               <div className="nat-metric"><span className="stat accent" style={{ fontSize: 18 }}>{row.latest.toLocaleString()}</span><span className="helper">latest wk</span></div>
               <div className="nat-metric hide-compact"><span className="stat" style={{ fontSize: 18 }}>{row.total.toLocaleString()}</span><span className="helper">{rangeLabel} total</span></div>
             </div>
@@ -142,18 +142,64 @@ export function AnalyticsScreen() {
   );
 }
 
-function Sparkline({ values }: { values: number[] }) {
+interface Pt {
+  year: number;
+  week: number;
+  cases: number;
+}
+
+/** Interactive trend line — drag or hover to read the exact cases + week/date. */
+function Sparkline({ points }: { points: Pt[] }) {
+  const [idx, setIdx] = useState<number | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const W = 240;
-  const H = 34;
-  if (values.length < 2) return null;
-  const max = Math.max(1, ...values);
-  const pts = values
-    .map((v, i) => `${((i / (values.length - 1)) * W).toFixed(1)},${(H - (v / max) * (H - 3) - 1.5).toFixed(1)}`)
-    .join(" ");
+  const H = 44;
+  if (points.length < 2) return null;
+
+  const max = Math.max(1, ...points.map((p) => p.cases));
+  const xOf = (i: number) => (i / (points.length - 1)) * W;
+  const yOf = (v: number) => H - (v / max) * (H - 8) - 4;
+  const line = points.map((p, i) => `${xOf(i).toFixed(1)},${yOf(p.cases).toFixed(1)}`).join(" ");
+
+  function locate(clientX: number) {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const rel = (clientX - r.left) / r.width;
+    setIdx(Math.max(0, Math.min(points.length - 1, Math.round(rel * (points.length - 1)))));
+  }
+
+  const active = idx != null ? points[idx] : null;
+  const pct = idx != null ? (idx / (points.length - 1)) * 100 : 0;
+  const dotTopPct = active ? (yOf(active.cases) / H) * 100 : 0;
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" role="img" aria-label="52-week trend">
-      <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
+    <div
+      className="spark-wrap"
+      ref={ref}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        locate(e.clientX);
+      }}
+      onPointerMove={(e) => {
+        if (e.buttons || e.pointerType === "mouse") locate(e.clientX);
+      }}
+      onPointerUp={() => setIdx(null)}
+      onPointerLeave={() => setIdx(null)}
+    >
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" role="img" aria-label="Trend — drag to read values">
+        <polyline points={line} fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+      {active && (
+        <>
+          <div className="spark-marker" style={{ left: `${pct}%` }} />
+          <div className="spark-dot" style={{ left: `${pct}%`, top: `${dotTopPct}%` }} />
+          <div className={"spark-tip" + (pct > 78 ? " tip-left" : pct < 22 ? " tip-right" : "")} style={{ left: `${pct}%` }}>
+            <b>{active.cases.toLocaleString()}</b> cases · W{active.week} {active.year}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
