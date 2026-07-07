@@ -398,6 +398,27 @@
   text-align: right;
 }
 
+/* Location picker (CDC benchmark) */
+.loc-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.loc-select {
+  flex: 0 1 240px;
+  max-width: 100%;
+  padding: 9px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.loc-device {
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 /* Timeline duration toggle (CDC benchmark) */
 .range-bar {
   display: flex;

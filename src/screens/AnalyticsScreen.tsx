@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { useSession } from "../store/session";
+import { useDevice, activeDevice } from "../store/device";
 import { unifiedHistory, dailySeries, byPathogen, trend, pathogenName } from "../lib/history";
-import { useNndss, nndssTotals } from "../lib/nndss";
+import { useNndss, nndssTotals, NNDSS_LOCATIONS, locationLabel, stateFromLabel } from "../lib/nndss";
 
 const DAYS = 28;
 const RANGES = [
@@ -33,7 +34,10 @@ function fmtWeekDate(year: number, week: number, withYear = true): string {
 export function AnalyticsScreen() {
   const { state } = useSession();
   const rows = unifiedHistory(state.history);
-  const { data: nndss, live } = useNndss();
+  const { state: dev } = useDevice();
+  const deviceState = stateFromLabel(activeDevice(dev).location?.label);
+  const [location, setLocation] = useState("US RESIDENTS");
+  const { data: nndss, live, loading } = useNndss(location);
   const nat = nndssTotals(nndss);
   const [rangeWeeks, setRangeWeeks] = useState(104);
   const rangeLabel = RANGES.find((r) => r.weeks === rangeWeeks)?.label ?? "";
@@ -114,12 +118,29 @@ export function AnalyticsScreen() {
       {/* Real national surveillance benchmark — CDC NNDSS */}
       <div className="section-label" style={{ marginTop: 24 }}>National surveillance benchmark · CDC NNDSS</div>
       <div className="panel panel-pad">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
-          <div className="helper">
-            Real U.S. weekly confirmed cases · {nndss.region} — compare your device detections against the national trend.
-          </div>
-          <span className={"chip " + (live ? "chip-susceptible" : "")}>
-            {live ? "● LIVE · data.cdc.gov" : "◍ snapshot"}
+        <div className="helper" style={{ marginBottom: 10 }}>
+          Real weekly confirmed cases · <b style={{ color: "var(--ink)" }}>{locationLabel(location)}</b> — compare your device
+          detections against the {location === "US RESIDENTS" ? "national" : "local"} trend. CDC NNDSS is U.S.-only.
+        </div>
+
+        {/* Location: national / region / state (+ device location) */}
+        <div className="loc-bar">
+          <select className="field field-sans loc-select" value={location} onChange={(e) => setLocation(e.target.value)} aria-label="Surveillance location">
+            <optgroup label="National">
+              {NNDSS_LOCATIONS.national.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </optgroup>
+            <optgroup label="Census regions">
+              {NNDSS_LOCATIONS.regions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </optgroup>
+            <optgroup label="States">
+              {NNDSS_LOCATIONS.states.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </optgroup>
+          </select>
+          {deviceState && location !== deviceState && (
+            <button className="press btn btn-ghost loc-device" onClick={() => setLocation(deviceState)}>📍 {locationLabel(deviceState)}</button>
+          )}
+          <span className={"chip " + (loading ? "" : live ? "chip-susceptible" : "")}>
+            {loading ? "◍ loading…" : live ? "● LIVE · data.cdc.gov" : "◍ snapshot"}
           </span>
         </div>
 
