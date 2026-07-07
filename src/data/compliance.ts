@@ -32,14 +32,17 @@ export interface Operator {
   role: Role;
   /** Scopes gate which actions the operator may take (least privilege). */
   scopes: ("run" | "sign_out" | "admin")[];
+  /** hashSeed of the operator's 4-digit sign-in PIN (kept out of the bundle as plaintext). */
+  pinHash: number;
 }
 
+// Demo PINs — CK 1234 · LS 2345 · MA 3456 · SK 4567 · MY 5678
 export const OPERATORS: Operator[] = [
-  { id: "op-ck", name: "Dr. C. Kim", initials: "CK", role: "Clinician", scopes: ["run", "sign_out"] },
-  { id: "op-ls", name: "Dr. L. Shin", initials: "LS", role: "Clinician", scopes: ["run", "sign_out"] },
-  { id: "op-ma", name: "Dr. M. Alipanah", initials: "MA", role: "Clinician", scopes: ["run", "sign_out"] },
-  { id: "op-sk", name: "Dr. S. Kim", initials: "SK", role: "Clinician", scopes: ["run", "sign_out"] },
-  { id: "op-my", name: "M. Yoon", initials: "MY", role: "Administrator", scopes: ["run", "sign_out", "admin"] },
+  { id: "op-ck", name: "Dr. C. Kim", initials: "CK", role: "Clinician", scopes: ["run", "sign_out"], pinHash: 4257489661 },
+  { id: "op-ls", name: "Dr. L. Shin", initials: "LS", role: "Clinician", scopes: ["run", "sign_out"], pinHash: 784195493 },
+  { id: "op-ma", name: "Dr. M. Alipanah", initials: "MA", role: "Clinician", scopes: ["run", "sign_out"], pinHash: 1466818649 },
+  { id: "op-sk", name: "Dr. S. Kim", initials: "SK", role: "Clinician", scopes: ["run", "sign_out"], pinHash: 2622927441 },
+  { id: "op-my", name: "M. Yoon", initials: "MY", role: "Administrator", scopes: ["run", "sign_out", "admin"], pinHash: 3305550597 },
 ];
 
 export interface ControlItem {

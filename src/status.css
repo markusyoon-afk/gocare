@@ -372,6 +372,57 @@
 }
 .signin-face {
   width: 100%;
+  margin-top: 4px;
+}
+
+/* PIN keypad login */
+.op-select-compact {
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.op-select-compact .operator-row {
+  padding: 8px 12px;
+}
+.pin-block {
+  margin: 4px 0 8px;
+}
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.pin-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--line-2);
+  transition: all 0.12s;
+}
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(53, 204, 230, 0.6);
+}
+.pin-error .pin-dot {
+  border-color: var(--red);
+}
+.pin-hint {
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 11.5px;
+}
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.key {
+  padding: 14px 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  border-radius: 12px;
 }
 
 /* Clickable cartridge tiles → informatics */
