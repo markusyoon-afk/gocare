@@ -137,7 +137,7 @@ export function openDetectionReport(p: ReportParams): void {
 
   <div class="disc">Performance figures shown in the app are illustrative demo values. Molecular AMR detects known resistance markers only; absence is reported as "no resistance detected," not phenotypic susceptibility. Confirm per local antibiogram and guidelines.</div>
 
-  <div class="foot"><span>GoDx, Inc. — GoCARE SaMD</span><span>Investigational Use Only — not for diagnostic procedures</span><span>Page 1 of 1</span></div>
+  <div class="foot"><span>GoDx, Inc. — GoCARE</span><span>Investigational Use Only — not for diagnostic procedures</span><span>Page 1 of 1</span></div>
 </body></html>`;
 
   // Print via a hidden iframe — no pop-up window, works in every context.

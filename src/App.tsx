@@ -42,7 +42,7 @@ const NAV: { key: View; label: string; glyph: string; section: string }[] = [
   { key: "audit", label: "Audit", glyph: "◈", section: "Governance" },
   { key: "compliance", label: "Compliance", glyph: "⛨", section: "Governance" },
 ];
-const SECTIONS = ["Run", "Surveillance", "Manage", "Reference", "Governance"];
+const SECTIONS = ["Run", "Surveillance", "Reference", "Manage", "Governance"];
 const PHONE_TABS: View[] = ["workflow", "device", "history", "analytics", "inventory"];
 
 /** Bridges the console to the live link: telemetry out, commands in, cartridge use. */
@@ -176,7 +176,7 @@ function Workspace() {
             <Logo className="logo-mark" size={38} />
             <div>
               <div className="brand-name">GoCARE</div>
-              <div className="brand-sub">GoDx · SaMD</div>
+              <div className="brand-sub">GoDx · Molecular Intelligence</div>
             </div>
           </div>
 
@@ -190,22 +190,26 @@ function Workspace() {
                   </button>
                 ))}
               </nav>
+              {/* Scan-to-launch sits right under Run — it's the core daily action */}
+              {sec === "Run" && (
+                <>
+                  <div className="nav-label">Scan to launch</div>
+                  <nav className="nav">
+                    {APP_ORDER.map((id) => {
+                      const app = APPS[id];
+                      const active = view === "workflow" && state.appId === id && state.stage !== "home";
+                      return (
+                        <button key={id} className={"nav-item" + (active ? " active" : "")} onClick={() => launch(id)}>
+                          <span className="nav-dot" /> {app.name}
+                          {app.lead && <span className="nav-tm">LEAD</span>}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </>
+              )}
             </div>
           ))}
-
-          <div className="nav-label">Scan to launch</div>
-          <nav className="nav">
-            {APP_ORDER.map((id) => {
-              const app = APPS[id];
-              const active = view === "workflow" && state.appId === id && state.stage !== "home";
-              return (
-                <button key={id} className={"nav-item" + (active ? " active" : "")} onClick={() => launch(id)}>
-                  <span className="nav-dot" /> {app.name}
-                  {app.lead && <span className="nav-tm">LEAD</span>}
-                </button>
-              );
-            })}
-          </nav>
         </aside>
 
         <main className="main">

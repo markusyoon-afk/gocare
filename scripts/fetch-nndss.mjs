@@ -21,7 +21,7 @@ const LABELS = {
 const inList = Object.keys(LABELS)
   .map((l) => `'${l.replace(/'/g, "''")}'`)
   .join(",");
-const where = `location2='US RESIDENTS' AND label in(${inList})`;
+const where = `states='U.S. Residents' AND label in(${inList})`;
 const url =
   `https://data.cdc.gov/resource/${RESOURCE}.json?` +
   `$select=label,year,week,m1&$where=${encodeURIComponent(where)}&$order=week&$limit=1000`;
@@ -51,7 +51,7 @@ const out = {
   source: "CDC NNDSS — National Notifiable Diseases Surveillance System",
   dataset: RESOURCE,
   url: "https://data.cdc.gov/resource/" + RESOURCE + ".json",
-  region: "US RESIDENTS (national)",
+  region: "U.S. Residents",
   years: yrs,
   latestYear: yrs[yrs.length - 1],
   metric: "Confirmed cases per MMWR week (m1)",

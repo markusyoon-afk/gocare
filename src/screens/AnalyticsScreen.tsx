@@ -7,10 +7,11 @@ import { generateInsights } from "../lib/insights";
 
 const DAYS = 28;
 const RANGES = [
+  { label: "1 mo", weeks: 4 },
   { label: "3 mo", weeks: 13 },
   { label: "6 mo", weeks: 26 },
   { label: "1 yr", weeks: 52 },
-  { label: "2 yr", weeks: 104 },
+  { label: "All", weeks: 999 },
 ];
 
 /** MMWR week-ending (Saturday) date for an (year, week). */
@@ -37,17 +38,13 @@ export function AnalyticsScreen() {
   const rows = unifiedHistory(state.history);
   const { state: dev } = useDevice();
   const deviceState = stateFromLabel(activeDevice(dev).location?.label);
-  const [location, setLocation] = useState("US RESIDENTS");
+  const [location, setLocation] = useState("U.S. Residents");
   const { data: nndss, live, loading } = useNndss(location);
-  const nat = nndssTotals(nndss);
-  const [rangeWeeks, setRangeWeeks] = useState(104);
+  const [rangeWeeks, setRangeWeeks] = useState(26);
   const rangeLabel = RANGES.find((r) => r.weeks === rangeWeeks)?.label ?? "";
   // Window each pathogen's series to the selected duration.
-  const natWindowed = nat.map((row) => {
-    const pts = row.points.slice(-rangeWeeks);
-    return { ...row, pts, latest: pts.length ? pts[pts.length - 1].cases : 0, total: pts.reduce((s, p) => s + p.cases, 0) };
-  });
-  const span = natWindowed[0]?.pts ?? [];
+  const nat = nndssTotals(nndss, rangeWeeks >= 900 ? undefined : rangeWeeks);
+  const span = nat[0]?.points ?? [];
   const spanLabel = span.length
     ? `${fmtWeekDate(span[0].year, span[0].week)} – ${fmtWeekDate(span[span.length - 1].year, span[span.length - 1].week)}`
     : "";
@@ -186,12 +183,12 @@ export function AnalyticsScreen() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
-          {natWindowed.map((row) => (
+          {nat.map((row) => (
             <div key={row.id} className="nat-row">
               <div className="nat-name">{pathogenName(row.id)}</div>
-              <div className="nat-spark"><Sparkline points={row.pts} /></div>
-              <div className="nat-metric"><span className="stat accent" style={{ fontSize: 18 }}>{row.latest.toLocaleString()}</span><span className="helper">latest wk</span></div>
-              <div className="nat-metric hide-compact"><span className="stat" style={{ fontSize: 18 }}>{row.total.toLocaleString()}</span><span className="helper">{rangeLabel} total</span></div>
+              <div className="nat-spark"><Sparkline points={row.points} /></div>
+              <div className="nat-metric"><span className="stat accent" style={{ fontSize: 18 }}>{row.total.toLocaleString()}</span><span className="helper">{rangeLabel} total</span></div>
+              <div className="nat-metric hide-compact"><span className="stat" style={{ fontSize: 16 }}>{row.latest.toLocaleString()}</span><span className="helper">latest wk</span></div>
             </div>
           ))}
         </div>

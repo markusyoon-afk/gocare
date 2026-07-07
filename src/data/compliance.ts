@@ -16,7 +16,7 @@
 export const SOFTWARE = {
   name: "GoCARE",
   version: "0.5.0",
-  build: "SaMD · IVD workflow · connected fleet + surveillance",
+  build: "Clinical software · connected fleet + surveillance",
   udiDi: "GODX-GOCARE-0003", // placeholder device identifier
   classification: "DEMO",
   intendedUse: "Investigational Use Only — not for diagnostic procedures",
@@ -119,8 +119,8 @@ export const CONTROLS: ControlItem[] = [
   {
     id: "traceability",
     title: "Software lifecycle & traceability",
-    detail: "Versioned SaMD build with device/lot traceability on every result. Verification battery gates each release.",
-    frameworks: ["IEC 62304", "ISO 13485", "FDA SaMD"],
+    detail: "Versioned software build with device/lot traceability on every result. Verification battery gates each release.",
+    frameworks: ["Software lifecycle", "Version traceability"],
     layer: "ops",
   },
 ];

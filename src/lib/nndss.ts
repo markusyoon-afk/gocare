@@ -1,10 +1,10 @@
 /**
  * National / regional / state infectious-disease surveillance from CDC NNDSS.
  *
- * Serves a baked national snapshot (src/data/nndss.json) instantly, then fetches
- * live from data.cdc.gov for the selected location (CORS is open). Location is the
- * uppercase value of the `states` field: "US RESIDENTS" (national), a census region
- * ("PACIFIC"…), or a state ("WISCONSIN"…). CDC NNDSS is U.S.-only.
+ * Uses the CURRENT (proper-case) location format of dataset x9gk-5huc, which carries
+ * live 2025–present weekly data (`states`: "U.S. Residents", a census region, or a
+ * state). Serves a baked snapshot instantly, then refreshes live (CORS open).
+ * CDC NNDSS is U.S.-only.
  */
 import { useEffect, useState } from "react";
 import snapshot from "../data/nndss.json";
@@ -33,51 +33,45 @@ const LABELS: Record<string, string> = {
   "Shiga toxin-producing Escherichia coli (STEC)": "stec",
 };
 const RESOURCE = "x9gk-5huc";
+const NATIONAL = "U.S. Residents";
 
-/** [uppercase `states` value, display label, 2-letter abbr] */
-const STATES: [string, string, string][] = [
-  ["ALABAMA", "Alabama", "AL"], ["ALASKA", "Alaska", "AK"], ["ARIZONA", "Arizona", "AZ"], ["ARKANSAS", "Arkansas", "AR"],
-  ["CALIFORNIA", "California", "CA"], ["COLORADO", "Colorado", "CO"], ["CONNECTICUT", "Connecticut", "CT"], ["DELAWARE", "Delaware", "DE"],
-  ["DISTRICT OF COLUMBIA", "District of Columbia", "DC"], ["FLORIDA", "Florida", "FL"], ["GEORGIA", "Georgia", "GA"], ["HAWAII", "Hawaii", "HI"],
-  ["IDAHO", "Idaho", "ID"], ["ILLINOIS", "Illinois", "IL"], ["INDIANA", "Indiana", "IN"], ["IOWA", "Iowa", "IA"],
-  ["KANSAS", "Kansas", "KS"], ["KENTUCKY", "Kentucky", "KY"], ["LOUISIANA", "Louisiana", "LA"], ["MAINE", "Maine", "ME"],
-  ["MARYLAND", "Maryland", "MD"], ["MASSACHUSETTS", "Massachusetts", "MA"], ["MICHIGAN", "Michigan", "MI"], ["MINNESOTA", "Minnesota", "MN"],
-  ["MISSISSIPPI", "Mississippi", "MS"], ["MISSOURI", "Missouri", "MO"], ["MONTANA", "Montana", "MT"], ["NEBRASKA", "Nebraska", "NE"],
-  ["NEVADA", "Nevada", "NV"], ["NEW HAMPSHIRE", "New Hampshire", "NH"], ["NEW JERSEY", "New Jersey", "NJ"], ["NEW MEXICO", "New Mexico", "NM"],
-  ["NEW YORK", "New York", "NY"], ["NORTH CAROLINA", "North Carolina", "NC"], ["NORTH DAKOTA", "North Dakota", "ND"], ["OHIO", "Ohio", "OH"],
-  ["OKLAHOMA", "Oklahoma", "OK"], ["OREGON", "Oregon", "OR"], ["PENNSYLVANIA", "Pennsylvania", "PA"], ["RHODE ISLAND", "Rhode Island", "RI"],
-  ["SOUTH CAROLINA", "South Carolina", "SC"], ["SOUTH DAKOTA", "South Dakota", "SD"], ["TENNESSEE", "Tennessee", "TN"], ["TEXAS", "Texas", "TX"],
-  ["UTAH", "Utah", "UT"], ["VERMONT", "Vermont", "VT"], ["VIRGINIA", "Virginia", "VA"], ["WASHINGTON", "Washington", "WA"],
-  ["WEST VIRGINIA", "West Virginia", "WV"], ["WISCONSIN", "Wisconsin", "WI"], ["WYOMING", "Wyoming", "WY"],
+/** [proper-case name = API value = label, 2-letter abbr] */
+const STATES: [string, string][] = [
+  ["Alabama", "AL"], ["Alaska", "AK"], ["Arizona", "AZ"], ["Arkansas", "AR"], ["California", "CA"], ["Colorado", "CO"],
+  ["Connecticut", "CT"], ["Delaware", "DE"], ["District of Columbia", "DC"], ["Florida", "FL"], ["Georgia", "GA"], ["Hawaii", "HI"],
+  ["Idaho", "ID"], ["Illinois", "IL"], ["Indiana", "IN"], ["Iowa", "IA"], ["Kansas", "KS"], ["Kentucky", "KY"], ["Louisiana", "LA"],
+  ["Maine", "ME"], ["Maryland", "MD"], ["Massachusetts", "MA"], ["Michigan", "MI"], ["Minnesota", "MN"], ["Mississippi", "MS"],
+  ["Missouri", "MO"], ["Montana", "MT"], ["Nebraska", "NE"], ["Nevada", "NV"], ["New Hampshire", "NH"], ["New Jersey", "NJ"],
+  ["New Mexico", "NM"], ["New York", "NY"], ["North Carolina", "NC"], ["North Dakota", "ND"], ["Ohio", "OH"], ["Oklahoma", "OK"],
+  ["Oregon", "OR"], ["Pennsylvania", "PA"], ["Rhode Island", "RI"], ["South Carolina", "SC"], ["South Dakota", "SD"], ["Tennessee", "TN"],
+  ["Texas", "TX"], ["Utah", "UT"], ["Vermont", "VT"], ["Virginia", "VA"], ["Washington", "WA"], ["West Virginia", "WV"],
+  ["Wisconsin", "WI"], ["Wyoming", "WY"],
 ];
-const REGIONS: [string, string][] = [
-  ["NEW ENGLAND", "New England"], ["MIDDLE ATLANTIC", "Middle Atlantic"], ["EAST NORTH CENTRAL", "East North Central"],
-  ["WEST NORTH CENTRAL", "West North Central"], ["SOUTH ATLANTIC", "South Atlantic"], ["EAST SOUTH CENTRAL", "East South Central"],
-  ["WEST SOUTH CENTRAL", "West South Central"], ["MOUNTAIN", "Mountain"], ["PACIFIC", "Pacific"],
+const REGIONS = [
+  "New England", "Middle Atlantic", "East North Central", "West North Central", "South Atlantic", "East South Central",
+  "West South Central", "Mountain", "Pacific",
 ];
 
 export const NNDSS_LOCATIONS = {
-  national: [["US RESIDENTS", "United States (national)"]] as [string, string][],
-  regions: REGIONS,
-  states: STATES.map(([v, l]) => [v, l] as [string, string]),
+  national: [[NATIONAL, "United States (national)"]] as [string, string][],
+  regions: REGIONS.map((r) => [r, r] as [string, string]),
+  states: STATES.map(([n]) => [n, n] as [string, string]),
 };
 
-/** Display label for a location value. */
 export function locationLabel(value: string): string {
-  if (value === "US RESIDENTS") return "United States (national)";
-  return [...REGIONS, ...STATES.map((s) => [s[0], s[1]] as [string, string])].find(([v]) => v === value)?.[1] ?? value;
+  return value === NATIONAL ? "United States (national)" : value;
 }
 
-/** Derive a state value from a device location label like "Madison, WI". */
+/** Derive a proper-case state value from a device location label like "Madison, WI". */
 export function stateFromLabel(label?: string | null): string | null {
   if (!label) return null;
   const abbr = label.match(/,\s*([A-Za-z]{2})\b/);
   if (abbr) {
-    const hit = STATES.find((s) => s[2] === abbr[1].toUpperCase());
+    const hit = STATES.find((s) => s[1] === abbr[1].toUpperCase());
     if (hit) return hit[0];
   }
-  const up = label.toUpperCase();
-  return STATES.find((s) => up.includes(s[0]))?.[0] ?? null;
+  const low = label.toLowerCase();
+  return STATES.find((s) => low.includes(s[0].toLowerCase()))?.[0] ?? null;
 }
 
 function empty(): Record<string, NndssPoint[]> {
@@ -91,7 +85,7 @@ async function fetchLive(location: string): Promise<Nndss | null> {
   const where = `states='${location.replace(/'/g, "''")}' AND label in(${inList})`;
   const url =
     `https://data.cdc.gov/resource/${RESOURCE}.json?` +
-    `$select=label,year,week,m1&$where=${encodeURIComponent(where)}&$order=year,week&$limit=1500`;
+    `$select=label,year,week,m1&$where=${encodeURIComponent(where)}&$order=year,week&$limit=2000`;
 
   const res = await fetch(url);
   if (!res.ok) return null;
@@ -107,15 +101,11 @@ async function fetchLive(location: string): Promise<Nndss | null> {
     years.add(year);
     series[id].push({ year, week: Number(r.week), cases: Math.round(Number(r.m1) || 0) });
   }
-  for (const k of Object.keys(series)) {
-    series[k].sort((a, b) => a.year - b.year || a.week - b.week);
-    series[k] = series[k].slice(-104);
-  }
+  for (const k of Object.keys(series)) series[k].sort((a, b) => a.year - b.year || a.week - b.week);
   const yrs = [...years].sort((a, b) => a - b);
   return { ...(snapshot as Nndss), region: location, years: yrs, latestYear: yrs[yrs.length - 1], fetchedAt: new Date().toISOString(), series };
 }
 
-/** Baked national snapshot immediately; live CDC refresh for the selected location. */
 export function useNndss(location: string): { data: Nndss; live: boolean; loading: boolean } {
   const [data, setData] = useState<Nndss>(snapshot as Nndss);
   const [live, setLive] = useState(false);
@@ -125,7 +115,7 @@ export function useNndss(location: string): { data: Nndss; live: boolean; loadin
     let cancelled = false;
     setLoading(true);
     setLive(false);
-    if (location === "US RESIDENTS") setData(snapshot as Nndss);
+    if (location === NATIONAL) setData(snapshot as Nndss);
     fetchLive(location)
       .then((d) => {
         if (cancelled) return;
@@ -146,12 +136,15 @@ export function useNndss(location: string): { data: Nndss; live: boolean; loadin
   return { data, live, loading };
 }
 
-/** Weekly totals summed across the tracked pathogens. */
-export function nndssTotals(data: Nndss) {
-  return Object.entries(data.series).map(([id, pts]) => ({
-    id,
-    total: pts.reduce((s, p) => s + p.cases, 0),
-    latest: pts.length ? pts[pts.length - 1].cases : 0,
-    points: pts,
-  }));
+/** Totals over the visible window (sliced to `weeks`) — the range total, latest, and points. */
+export function nndssTotals(data: Nndss, weeks?: number) {
+  return Object.entries(data.series).map(([id, all]) => {
+    const pts = weeks ? all.slice(-weeks) : all;
+    return {
+      id,
+      total: pts.reduce((s, p) => s + p.cases, 0),
+      latest: pts.length ? pts[pts.length - 1].cases : 0,
+      points: pts,
+    };
+  });
 }
